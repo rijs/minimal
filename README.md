@@ -1,0 +1,3 @@
+# [Ripple Minimal](https://github.com/pemrouz/ripple)
+
+This is a minimal build of Ripple, with only a few of the [client modules](https://github.com/rijs/minimal/blob/master/src/index.js. This kind of build is useful if you are only using Ripple on the client without using any of the server modules, or want a lightweight solution to use [Vanilla Web Components](https://github.com/pemrouz/vanilla) alongside your existing application with a different architecture.
