@@ -4,8 +4,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.default = features;
-/* istanbul ignore next */
+exports.default = features;/* istanbul ignore next */
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 // -------------------------------------------
@@ -24,7 +23,7 @@ var render = function render(ripple) {
       var features = (0, str)((0, attr)(el, 'is')).split(' ').map((0, from)(ripple.resources)).filter((0, header)('content-type', 'application/javascript')),
           css = (0, str)((0, attr)('css')(el)).split(' ');
 
-      features.filter((0, by)('headers.needs', includes('[css]'))).map((0, key)('name')).map((0, append)('.css')).filter((0, not)(is.in(css))).map(function (d) {
+      features.filter((0, by)('headers.needs', (0, includes)('[css]'))).map((0, key)('name')).map((0, append)('.css')).filter((0, not)(is.in(css))).map(function (d) {
         return (0, attr)('css', ((0, str)((0, attr)('css')(el)) + ' ' + d).trim())(el);
       });
 
@@ -107,13 +106,75 @@ function create(opts) {
 
   return ripple;
 }
-},{"rijs.components":3,"rijs.core":6,"rijs.css":8,"rijs.data":9,"rijs.features":1,"rijs.fn":10,"rijs.helpers":11,"rijs.needs":12,"rijs.precss":14,"rijs.singleton":13}],3:[function(require,module,exports){
+},{"rijs.components":4,"rijs.core":7,"rijs.css":9,"rijs.data":10,"rijs.features":1,"rijs.fn":11,"rijs.helpers":12,"rijs.needs":3,"rijs.precss":13,"rijs.singleton":14}],3:[function(require,module,exports){
+'use strict';
+
+var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; })();
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = needs;
+/* istanbul ignore next */
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+// -------------------------------------------
+// Define Default Attributes for Components
+// -------------------------------------------
+function needs(ripple) {
+  if (!true) return;
+  log('creating');
+  ripple.render = render(ripple)(ripple.render);
+  return ripple;
+}
+
+var render = function render(ripple) {
+  return function (next) {
+    return function (el) {
+      var component = (0, lo)(el.nodeName);
+      if (!(component in ripple.resources)) return;
+
+      var headers = ripple.resources[component].headers,
+          attrs = headers.attrs = headers.attrs || parse(headers.needs, component);
+
+      return attrs.map(function (_ref) {
+        var _ref2 = _slicedToArray(_ref, 2);
+
+        var name = _ref2[0];
+        var values = _ref2[1];
+
+        return values.some(function (v, i) {
+          var from = (0, attr)(el, name) || '';
+          return (0, includes)(v)(from) ? false : (0, attr)(el, name, (from + ' ' + v).trim());
+        });
+      }).some(Boolean) ? el.draw() : next(el);
+    };
+  };
+};
+
+var parse = function parse() {
+  var attrs = arguments.length <= 0 || arguments[0] === undefined ? '' : arguments[0];
+  var component = arguments[1];
+  return attrs.split('[').slice(1).map((0, replace)(']', '')).map((0, split)('=')).map(function (_ref3) {
+    var _ref4 = _slicedToArray(_ref3, 2);
+
+    var k = _ref4[0];
+    var v = _ref4[1];
+    return v ? [k, v.split(' ')] : k == 'css' ? [k, [component + '.css']] : [k, []];
+  });
+};
+
+var log = window.log('[ri/needs]'),
+    err = window.err('[ri/needs]');
+},{}],4:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.default = components;var _data = require('./types/data');
+exports.default = components;
+
+var _data = require('./types/data');
 
 var _data2 = _interopRequireDefault(_data);
 
@@ -138,9 +199,9 @@ function components(ripple) {
   if (!true) return ripple;
   log('creating');
 
-  if (!customs) ready(polyfill(ripple));
+  if (!customs) (0, ready)(polyfill(ripple));
   (0, values)(ripple.types).map(function (type) {
-    return type.parse = (0, proxy)(type.parse || identity, clean(ripple));
+    return type.parse = (0, proxy)(type.parse, clean(ripple));
   });
   (0, key)('types.application/javascript.render', (0, wrap)((0, _fn2.default)(ripple)))(ripple);
   (0, key)('types.application/data.render', (0, wrap)((0, _data2.default)(ripple)))(ripple);
@@ -220,7 +281,7 @@ function render(ripple) {
 
 // polyfill
 function polyfill(ripple) {
-  return function () {
+  return function (d) {
     if (typeof MutationObserver == 'undefined') return;
     if (document.body.muto) document.body.muto.disconnect();
     var muto = document.body.muto = new MutationObserver(drawCustomEls(ripple)),
@@ -249,7 +310,7 @@ function defaults(el, data) {
 
 function overwrite(to) {
   return function (from) {
-    return keys(from).map((0, copy)(from, to));
+    return (0, keys)(from).map((0, copy)(from, to));
   };
 }
 
@@ -257,13 +318,9 @@ function onlyIfDifferent(m) {
   return (0, attr)(m.target, m.attributeName) != m.oldValue;
 }
 
-function ready(fn) {
-  return document.body ? fn() : document.addEventListener('DOMContentLoaded', fn);
-}
-
 function drawCustomEls(ripple) {
   return function (mutations) {
-    return mutations.map((0, key)('addedNodes')).map(to.arr).reduce(flatten).filter((0, by)('nodeName', (0, includes)('-'))).map(ripple.draw);
+    return mutations.map((0, key)('addedNodes')).map(to.arr).reduce(flatten).filter((0, by)('nodeName', (0, includes)('-'))).map(ripple.draw) | 0;
   };
 }
 
@@ -286,7 +343,7 @@ var log = window.log('[ri/components]'),
     customs = true && !!document.registerElement,
     isAttached = customs ? 'html *, :host-context(html) *' : 'html *';
 true && (Element.prototype.matches = Element.prototype.matches || Element.prototype.msMatchesSelector);
-},{"./types/data":4,"./types/fn":5}],4:[function(require,module,exports){
+},{"./types/data":5,"./types/fn":6}],5:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -301,7 +358,7 @@ function data(ripple) {
     return (0, all)('[data~="' + res.name + '"]:not([inert])').map(ripple.draw);
   };
 }
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -335,13 +392,14 @@ var customs = true && !!document.registerElement,
     customEl = function customEl(d) {
   return (0, includes)('-')(d.name);
 };
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = core;
+
 var _text = require('./types/text');
 
 var _text2 = _interopRequireDefault(_text);
@@ -377,7 +435,7 @@ function core() {
   }
 }
 
-function register(ripple) {
+var register = function register(ripple) {
   return function (_ref) {
     var name = _ref.name;
     var body = _ref.body;
@@ -393,37 +451,37 @@ function register(ripple) {
     ripple.emit('change', [ripple.resources[name], { type: type }]);
     return ripple.resources[name].body;
   };
-}
+};
 
-function normalise(ripple) {
+var normalise = function normalise(ripple) {
   return function (res) {
     if (!(0, header)('content-type')(res)) (0, values)(ripple.types).sort((0, za)('priority')).some(contentType(res));
     if (!(0, header)('content-type')(res)) return err('could not understand resource', res), false;
     return parse(ripple)(res);
   };
-}
+};
 
-function parse(ripple) {
+var parse = function parse(ripple) {
   return function (res) {
     var type = (0, header)('content-type')(res);
     if (!ripple.types[type]) return err('could not understand type', type), false;
     return (ripple.types[type].parse || identity)(res);
   };
-}
+};
 
-function contentType(res) {
+var contentType = function contentType(res) {
   return function (type) {
     return type.check(res) && (res.headers['content-type'] = type.header);
   };
-}
+};
 
-function types() {
+var types = function types() {
   return [_text2.default].reduce(to.obj('header'), 1);
-}
+};
 
 var err = window.err('[ri/core]'),
     log = window.log('[ri/core]');
-},{"./types/text":7}],7:[function(require,module,exports){
+},{"./types/text":8}],8:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -437,7 +495,7 @@ exports.default = {
     return !(0, includes)('.html')(res.name) && !(0, includes)('.css')(res.name) && is.str(res.body);
   }
 };
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -463,7 +521,7 @@ function css(ripple) {
 }
 
 var log = window.log('[ri/types/css]');
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -512,45 +570,42 @@ function trickle(ripple) {
 }
 
 var log = window.log('[ri/types/data]');
-},{}],10:[function(require,module,exports){
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = fnc;
-
-/* istanbul ignore next */
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-// -------------------------------------------
-// Exposes a convenient global instance
-// -------------------------------------------
-function fnc(ripple) {
-  log('creating');
-  ripple.types['application/javascript'] = {
-    header: 'application/javascript',
-    check: function check(res) {
-      return is.fn(res.body);
-    },
-    parse: function parse(res) {
-      return res.body = (0, fn)(res.body), res;
-    }
-  };
-
-  return ripple;
-}
-
-var log = window.log('[ri/types/fn]');
 },{}],11:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.default = helpers;
+exports.default = fnc;/* istanbul ignore next */
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-/* istanbul ignore next */
+// -------------------------------------------
+// Adds support for function resources
+// -------------------------------------------
+function fnc(ripple) {
+  log('creating');
+  ripple.types['application/javascript'] = { header: header, check: check, parse: parse };
+  return ripple;
+}
+
+var header = 'application/javascript';
+
+var check = function check(res) {
+  return is.fn(res.body);
+};
+
+var parse = function parse(res) {
+  return res.body = (0, fn)(res.body), res;
+};
+
+var log = window.log('[ri/types/fn]');
+},{}],12:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = helpers;/* istanbul ignore next */
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 // -------------------------------------------
@@ -593,87 +648,7 @@ function serialise(res) {
 }
 
 var log = window.log('[ri/helpers]');
-},{}],12:[function(require,module,exports){
-'use strict';
-
-var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; })();
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = needs;/* istanbul ignore next */
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-// -------------------------------------------
-// Define Default Attributes for Components
-// -------------------------------------------
-function needs(ripple) {
-  if (!true) return;
-  log('creating');
-  ripple.render = render(ripple)(ripple.render);
-  return ripple;
-}
-
-function render(ripple) {
-  return function (next) {
-    return function (el) {
-      var component = (0, lo)(el.nodeName);
-      if (!(component in ripple.resources)) return;
-
-      var headers = ripple.resources[component].headers,
-          attrs = headers.attrs = headers.attrs || parse(headers.needs, component);
-
-      return attrs.map(function (_ref) {
-        var _ref2 = _slicedToArray(_ref, 2);
-
-        var name = _ref2[0];
-        var values = _ref2[1];
-
-        return values.some(function (v, i) {
-          var from = (0, attr)(el, name) || '';
-          return (0, includes)(v)(from) ? false : (0, attr)(el, name, (from + ' ' + v).trim());
-        });
-      }).some(Boolean) ? el.draw() : next(el);
-    };
-  };
-}
-
-function parse() {
-  var attrs = arguments.length <= 0 || arguments[0] === undefined ? '' : arguments[0];
-  var component = arguments[1];
-
-  return attrs.split('[').slice(1).map((0, replace)(']', '')).map((0, split)('=')).map(function (_ref3) {
-    var _ref4 = _slicedToArray(_ref3, 2);
-
-    var k = _ref4[0];
-    var v = _ref4[1];
-    return v ? [k, v.split(' ')] : k == 'css' ? [k, [component + '.css']] : [k, []];
-  });
-}
-
-var log = window.log('[ri/needs]'),
-    err = window.err('[ri/needs]');
 },{}],13:[function(require,module,exports){
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = singleton;
-/* istanbul ignore next */
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-// -------------------------------------------
-// Exposes a convenient global instance
-// -------------------------------------------
-function singleton(ripple) {
-  log('creating');
-  if (!owner.ripple) owner.ripple = ripple;
-  return ripple;
-}
-
-var log = window.log('[ri/singleton]');
-},{}],14:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -761,4 +736,24 @@ var css = function css(ripple) {
 
 var log = window.log('[ri/precss]'),
     err = window.err('[ri/precss]');
+},{}],14:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = singleton;
+/* istanbul ignore next */
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+// -------------------------------------------
+// Exposes a convenient global instance
+// -------------------------------------------
+function singleton(ripple) {
+  log('creating');
+  if (!owner.ripple) owner.ripple = ripple;
+  return ripple;
+}
+
+var log = window.log('[ri/singleton]');
 },{}]},{},[2]);
