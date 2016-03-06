@@ -1,5 +1,6 @@
 import components from 'rijs.components'
 import singleton from 'rijs.singleton'
+import versioned from 'rijs.versioned'
 import features from 'rijs.features'
 import helpers from 'rijs.helpers'
 import precss from 'rijs.precss'
@@ -24,6 +25,6 @@ export default function create(opts){
   features(ripple)       // extend components with features
   needs(ripple)          // define default attrs for components
   precss(ripple)         // preapplies scoped css 
-  
+  versioned(ripple)      // versioning info and time travel
   return ripple
 }
