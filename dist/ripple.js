@@ -7780,13 +7780,11 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.default = helpers;
 
+
+
 var _values = require('utilise/values');
 
 var _values2 = _interopRequireDefault(_values);
-
-var _proxy = require('utilise/proxy');
-
-var _proxy2 = _interopRequireDefault(_proxy);
 
 var _keys = require('utilise/keys');
 
@@ -7823,12 +7821,13 @@ function helpers(ripple) {
 
   var type = ripple.types['application/data'];
   type.parse = attach(type.parse);
-  if (!client) type.to = serialise(type.to);
+  if (!true) type.to = serialise(type.to);
   return ripple;
 }
 
 var attach = function attach(next) {
   return function (res) {
+    if (next) res = next(res);
     var helpers = res.headers.helpers;
 
     (0, _keys2.default)(helpers).map(function (name) {
@@ -7837,7 +7836,7 @@ var attach = function attach(next) {
       return (0, _def2.default)(res.body, name, helpers[name]);
     });
 
-    return next ? next(res) : res;
+    return res;
   };
 };
 
@@ -7857,7 +7856,7 @@ var serialise = function serialise(next) {
 };
 
 var log = require('utilise/log')('[ri/helpers]');
-},{"utilise/by":65,"utilise/def":73,"utilise/fn":85,"utilise/is":97,"utilise/keys":100,"utilise/log":104,"utilise/proxy":131,"utilise/str":145,"utilise/values":153}],167:[function(require,module,exports){
+},{"utilise/by":65,"utilise/def":73,"utilise/fn":85,"utilise/is":97,"utilise/keys":100,"utilise/log":104,"utilise/str":145,"utilise/values":153}],167:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {

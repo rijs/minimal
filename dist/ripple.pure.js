@@ -697,6 +697,7 @@ function helpers(ripple) {
 
 var attach = function attach(next) {
   return function (res) {
+    if (next) res = next(res);
     var helpers = res.headers.helpers;
 
     (0, keys)(helpers).map(function (name) {
@@ -705,7 +706,7 @@ var attach = function attach(next) {
       return (0, def)(res.body, name, helpers[name]);
     });
 
-    return next ? next(res) : res;
+    return res;
   };
 };
 
