@@ -186,8 +186,10 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 function version(ripple) {
   log('creating');
 
+  var type = ripple.types['application/data'];
   ripple.on('change.version', commit(ripple));
   ripple.version = checkout(ripple);
+  ripple.version.calc = calc(ripple);
   ripple.version.log = [];
   return ripple;
 }
@@ -212,7 +214,7 @@ var checkout = function checkout(ripple) {
 
 var application = function application(ripple) {
   return function (index) {
-    return ripple.version.log[rel(ripple.version, index)].map(resource(ripple));
+    return ripple.version.log[rel(ripple.version.log, index)].map(resource(ripple));
   };
 };
 
@@ -220,12 +222,28 @@ var resource = function resource(ripple) {
   return function (_ref2) {
     var name = _ref2.name;
     var index = _ref2.index;
-    return ripple(name, ripple.resources[name].body.log[rel(ripple.resources[name].body, index)].value.toJS());
+    return ripple(name, ripple.version.calc(name, index));
   };
 };
 
-var rel = function rel(_ref3, index) {
-  var log = _ref3.log;
+var calc = function calc(ripple) {
+  return function (name, index) {
+    var log = ripple.resources[name].body.log,
+        end = rel(log, index),
+        i = end;
+
+    if (log[end].cache) return log[end].cache;
+
+    while (is.def(log[i].key)) {
+      i--;
+    }var root = (0, clone)(log[i].value);
+    while (i !== end) {
+      (0, set)(log[++i])(root);
+    }return (0, def)(log[end], 'cache', root);
+  };
+};
+
+var rel = function rel(log, index) {
   return index < 0 ? log.length + index - 1 : index;
 };
 
@@ -467,7 +485,6 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = core;
-
 var _text = require('./types/text');
 
 var _text2 = _interopRequireDefault(_text);
@@ -515,7 +532,7 @@ var register = function register(ripple) {
 
     if (!res) return err('failed to register', name), false;
     ripple.resources[name] = res;
-    ripple.emit('change', [name, { type: 'update', value: res.body }]);
+    ripple.emit('change', [name, res.body.log ? (0, last)(res.body.log) : { type: 'update', value: res.body }]);
     return ripple.resources[name].body;
   };
 };
@@ -595,7 +612,6 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 exports.default = data;
-
 /* istanbul ignore next */
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -613,19 +629,11 @@ function data(ripple) {
     parse: function parse(res) {
       var existing = ripple.resources[res.name] || {};
 
-      !res.body && (res.body = []);
-      !res.body.on && (res.body = (0, emitterify)(res.body, null));
-
+      res.body = (0, set)()(res.body || [], existing.body && existing.body.log);
       (0, extend)(res.headers)(existing.headers);
-      (0, overwrite)(res.body.on)(existing.body && existing.body.on || {});
-
-      if (logged(existing)) logged(res) ? res.body.log = existing.body.log.reset(res.body) : (0, def)(res.body, 'log', existing.body.log.reset(res.body), 1);
-
+      (0, overwrite)(res.body.on)(listeners(existing));
       res.body.on('change.bubble', function (change) {
         return ripple.emit('change', [res.name, change], (0, not)(is.in(['data'])));
-      });
-      res.body.on('log.bubble', function (change) {
-        return res.body.emit('change', change);
       });
 
       return res;
@@ -642,7 +650,7 @@ var trickle = function trickle(ripple) {
 };
 
 var log = window.log('[ri/types/data]'),
-    logged = (0, key)('body.log');
+    listeners = (0, key)('body.on');
 },{}],12:[function(require,module,exports){
 'use strict';
 
