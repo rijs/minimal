@@ -400,7 +400,7 @@ function create(opts) {
   return ripple;
 }
 
-},{"rijs.components":179,"rijs.core":182,"rijs.css":184,"rijs.data":185,"rijs.features":1,"rijs.fn":186,"rijs.helpers":187,"rijs.needs":45,"rijs.precss":188,"rijs.singleton":190,"rijs.versioned":58,"utilise":117}],19:[function(require,module,exports){
+},{"rijs.components":179,"rijs.core":206,"rijs.css":208,"rijs.data":209,"rijs.features":1,"rijs.fn":210,"rijs.helpers":211,"rijs.needs":45,"rijs.precss":212,"rijs.singleton":214,"rijs.versioned":58,"utilise":117}],19:[function(require,module,exports){
 'use strict'
 
 exports.toByteArray = toByteArray
@@ -4990,7 +4990,6 @@ var render = function render(ripple) {
 
         var name = _ref2[0];
         var values = _ref2[1];
-
         return values.some(function (v, i) {
           var from = (0, _attr2.default)(el, name) || '';
           return (0, _includes2.default)(v)(from) ? false : (0, _attr2.default)(el, name, (from + ' ' + v).trim());
@@ -5546,8 +5545,14 @@ module.exports = function debounce(d){
   
 }
 },{"utilise/is":118}],93:[function(require,module,exports){
-arguments[4][62][0].apply(exports,arguments)
-},{"dup":62,"utilise/has":111}],94:[function(require,module,exports){
+var has = require('utilise/has')
+
+module.exports = function def(o, p, v, w){
+  !has(o, p) && Object.defineProperty(o, p, { value: v, writable: w })
+  return o[p]
+}
+
+},{"utilise/has":111}],94:[function(require,module,exports){
 var extend = require('utilise/extend')
   , keys = require('utilise/keys')
   , is = require('utilise/is')
@@ -5862,8 +5867,32 @@ module.exports = function join(left, right){
 }
 
 },{"utilise/by":85,"utilise/clone":88,"utilise/is":118,"utilise/key":120}],120:[function(require,module,exports){
-arguments[4][68][0].apply(exports,arguments)
-},{"dup":68,"utilise/is":118,"utilise/str":166}],121:[function(require,module,exports){
+var str = require('utilise/str')
+  , is = require('utilise/is')
+
+module.exports = function key(k, v){ 
+  var set = arguments.length > 1
+    , keys = is.fn(k) ? [] : str(k).split('.')
+    , root = keys.shift()
+
+  return function deep(o, i){
+    var masked = {}
+    
+    return !o ? undefined 
+         : !is.num(k) && !k ? o
+         : is.arr(k) ? (k.map(copy), masked)
+         : o[k] || !keys.length ? (set ? ((o[k] = is.fn(v) ? v(o[k], i) : v), o)
+                                       :  (is.fn(k) ? k(o) : o[k]))
+                                : (set ? (key(keys.join('.'), v)(o[root] ? o[root] : (o[root] = {})), o)
+                                       :  key(keys.join('.'))(o[root]))
+
+    function copy(k){
+      var val = key(k)(o)
+      ;(val != undefined) && key(k, val)(masked)
+    }
+  }
+}
+},{"utilise/is":118,"utilise/str":166}],121:[function(require,module,exports){
 arguments[4][69][0].apply(exports,arguments)
 },{"dup":69,"utilise/is":118}],122:[function(require,module,exports){
 module.exports =  function last(d) {
@@ -6889,6 +6918,8 @@ function once(nodes, enter, exit) {
 }
 
 function event(node, index) {
+  node = node.host && node.host.nodeName ? node.host : node
+  if (node.evented) return
   if (!node.on) emitterify(node)
   var on = node.on
     , emit = node.emit
@@ -6903,7 +6934,7 @@ function event(node, index) {
 
   node.emit = function(type, detail, p) {
     var params = p || { detail: detail, bubbles: false, cancelable: false }
-    ;(node.host || node).dispatchEvent(new window.CustomEvent(type, params))
+    node.dispatchEvent(new window.CustomEvent(type, params))
     return node
   }
 
@@ -6918,8 +6949,9 @@ function event(node, index) {
 function proxy(fn, c) {
   return function(){
     var args = arguments
-    c.each(function(d){
-      this[fn] && this[fn].apply(this, args)
+    c.each(function(){
+      var node = this.host || this
+      node[fn] && node[fn].apply(node, args)
     }) 
     return c 
   }
@@ -6966,20 +6998,20 @@ function byKey(selector, data, key, b, parent, tnodes, tenter, texit) {
       if (child === true) continue
       else child.__data__ = data[d]
     else
-      tenter[tenter.length] = child = create(selector, data, d)
+      tenter.unshift(child = create(selector, data, d))
     
     indexNodes[k] = true
 
     if (d == data.length - 1 || next !== child.nextSibling)
       parent.insertBefore(child, next)
 
-    next = tnodes[tnodes.length] = child
+    tnodes.unshift(next = child)
     if ('function' === typeof child.draw) child.draw()
   }
 
   for (c in indexNodes)
     if (indexNodes[c] !== true)
-      parent.removeChild(texit[texit.length] = indexNodes[c])
+      texit.unshift(parent.removeChild(indexNodes[c]))
 }
 },{"utilise/emitterify":97,"utilise/key":120}],144:[function(require,module,exports){
 var is = require('utilise/is')
@@ -7170,8 +7202,82 @@ module.exports = function send(path){
   }
 }
 },{}],162:[function(require,module,exports){
-arguments[4][75][0].apply(exports,arguments)
-},{"dup":75,"utilise/def":93,"utilise/emitterify":97,"utilise/is":118}],163:[function(require,module,exports){
+var act = { add: add, update: update, remove: remove }
+  , emitterify = require('utilise/emitterify')
+  , def = require('utilise/def')
+  , is  = require('utilise/is')
+  , str = JSON.stringify
+  , parse = JSON.parse
+
+module.exports = function set(d) {
+  return function(o, existing, max) {
+    if (!is.obj(o))
+      return o
+
+    if (!is.obj(d)) { 
+      var log = existing || o.log || []
+        , root = o
+
+      if (!is.def(max)) max = log.max || 0
+      if (!max)    log = []
+      if (max < 0) log = log.concat(null)
+      if (max > 0) {
+        var s = str(o)
+        root = parse(s) 
+        log = log.concat({ type: 'update', value: parse(s), time: log.length })
+      } 
+
+      def(log, 'max', max)
+      
+      root.log 
+        ? (root.log = log)
+        : def(emitterify(root, null), 'log', log, 1)
+
+      return root
+    }
+
+    if (is.def(d.key))
+      apply(o, d.type, (d.key = '' + d.key).split('.'), d.value)
+
+    if (o.log && o.log.max) 
+      o.log.push((d.time = o.log.length, o.log.max > 0 ? d : null))
+
+    if (o.emit)
+      o.emit('change', d)
+
+    return o
+  }
+}
+
+function apply(body, type, path, value) {
+  var next = path.shift()
+
+  if (path.length) { 
+    if (!(next in body)) 
+      if (type == 'remove') return
+      else body[next] = {}
+    apply(body[next], type, path, value)
+  }
+  else 
+    act[type](body, next, value)
+}
+
+function add(o, k, v) {
+  is.arr(o) 
+    ? o.splice(k, 0, v) 
+    : (o[k] = v)
+}
+
+function update(o, k, v) { 
+  o[k] = v 
+}
+
+function remove(o, k, v) { 
+  is.arr(o) 
+    ? o.splice(k, 1)
+    : delete o[k]
+}
+},{"utilise/def":93,"utilise/emitterify":97,"utilise/is":118}],163:[function(require,module,exports){
 module.exports = function slice(from, to){
   return function(d){
     return d.slice(from, to)
@@ -7212,7 +7318,9 @@ module.exports = function th(fn) {
 
 },{}],170:[function(require,module,exports){
 module.exports = function time(ms, fn) {
-  return setTimeout(fn, ms)
+  return arguments.length === 1 
+       ? setTimeout(ms)
+       : setTimeout(fn, ms)
 }
 },{}],171:[function(require,module,exports){
 arguments[4][17][0].apply(exports,arguments)
@@ -7418,8 +7526,10 @@ var resource = function resource(ripple) {
 // batch renders on render frames
 var batch = function batch(ripple) {
   return function (el) {
-    return !el.pending && (el.pending = requestAnimationFrame(function (d) {
-      return delete el.pending, ripple.render(el);
+    return el.pending ? el.pending.push(ripple.change) : (el.pending = [ripple.change], requestAnimationFrame(function (d) {
+      el.change = el.pending;
+      delete el.pending;
+      ripple.render(el);
     }));
   };
 };
@@ -7495,7 +7605,7 @@ var log = require('utilise/log')('[ri/components]'),
     customs = true && !!document.registerElement,
     isAttached = customs ? 'html *, :host-context(html) *' : 'html *';
 true && (Element.prototype.matches = Element.prototype.matches || Element.prototype.msMatchesSelector);
-},{"./types/data":180,"./types/fn":181,"utilise/all":79,"utilise/attr":82,"utilise/body":84,"utilise/err":98,"utilise/header":113,"utilise/includes":116,"utilise/is":118,"utilise/key":120,"utilise/lo":124,"utilise/log":125,"utilise/noop":140,"utilise/overwrite":144,"utilise/proxy":152,"utilise/time":170,"utilise/values":174}],180:[function(require,module,exports){
+},{"./types/data":180,"./types/fn":181,"utilise/all":182,"utilise/attr":183,"utilise/body":184,"utilise/err":187,"utilise/header":189,"utilise/includes":191,"utilise/is":192,"utilise/key":193,"utilise/lo":195,"utilise/log":196,"utilise/noop":197,"utilise/overwrite":198,"utilise/proxy":200,"utilise/time":203,"utilise/values":205}],180:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -7515,7 +7625,7 @@ function data(ripple) {
     return (0, _all2.default)('[data~="' + res.name + '"]:not([inert])').map(ripple.draw);
   };
 }
-},{"utilise/all":79}],181:[function(require,module,exports){
+},{"utilise/all":182}],181:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -7556,7 +7666,57 @@ var customs = true && !!document.registerElement,
     customEl = function customEl(d) {
   return (0, _includes2.default)('-')(d.name);
 };
-},{"utilise/all":79,"utilise/includes":116}],182:[function(require,module,exports){
+},{"utilise/all":182,"utilise/includes":191}],182:[function(require,module,exports){
+arguments[4][79][0].apply(exports,arguments)
+},{"dup":79,"utilise/to":204}],183:[function(require,module,exports){
+arguments[4][82][0].apply(exports,arguments)
+},{"dup":82,"utilise/is":192}],184:[function(require,module,exports){
+arguments[4][84][0].apply(exports,arguments)
+},{"dup":84}],185:[function(require,module,exports){
+arguments[4][90][0].apply(exports,arguments)
+},{"dup":90}],186:[function(require,module,exports){
+arguments[4][61][0].apply(exports,arguments)
+},{"dup":61,"utilise/sel":201}],187:[function(require,module,exports){
+arguments[4][47][0].apply(exports,arguments)
+},{"dup":47,"utilise/owner":199,"utilise/to":204}],188:[function(require,module,exports){
+arguments[4][6][0].apply(exports,arguments)
+},{"dup":6,"utilise/datum":186,"utilise/key":193}],189:[function(require,module,exports){
+arguments[4][113][0].apply(exports,arguments)
+},{"dup":113,"utilise/key":193}],190:[function(require,module,exports){
+arguments[4][114][0].apply(exports,arguments)
+},{"dup":114}],191:[function(require,module,exports){
+arguments[4][9][0].apply(exports,arguments)
+},{"dup":9}],192:[function(require,module,exports){
+arguments[4][10][0].apply(exports,arguments)
+},{"dup":10}],193:[function(require,module,exports){
+arguments[4][120][0].apply(exports,arguments)
+},{"dup":120,"utilise/is":192,"utilise/str":202}],194:[function(require,module,exports){
+arguments[4][69][0].apply(exports,arguments)
+},{"dup":69,"utilise/is":192}],195:[function(require,module,exports){
+arguments[4][51][0].apply(exports,arguments)
+},{"dup":51}],196:[function(require,module,exports){
+arguments[4][12][0].apply(exports,arguments)
+},{"dup":12,"utilise/is":192,"utilise/owner":199,"utilise/to":204}],197:[function(require,module,exports){
+arguments[4][140][0].apply(exports,arguments)
+},{"dup":140}],198:[function(require,module,exports){
+arguments[4][144][0].apply(exports,arguments)
+},{"dup":144,"utilise/copy":185,"utilise/is":192,"utilise/keys":194}],199:[function(require,module,exports){
+arguments[4][14][0].apply(exports,arguments)
+},{"dup":14}],200:[function(require,module,exports){
+arguments[4][152][0].apply(exports,arguments)
+},{"dup":152,"utilise/identity":190,"utilise/is":192}],201:[function(require,module,exports){
+arguments[4][15][0].apply(exports,arguments)
+},{"dup":15}],202:[function(require,module,exports){
+arguments[4][16][0].apply(exports,arguments)
+},{"dup":16,"utilise/is":192}],203:[function(require,module,exports){
+module.exports = function time(ms, fn) {
+  return setTimeout(fn, ms)
+}
+},{}],204:[function(require,module,exports){
+arguments[4][17][0].apply(exports,arguments)
+},{"dup":17}],205:[function(require,module,exports){
+arguments[4][78][0].apply(exports,arguments)
+},{"dup":78,"utilise/from":188,"utilise/keys":194}],206:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -7691,7 +7851,7 @@ var err = require('utilise/err')('[ri/core]'),
     now = function now(d, t) {
   return t = (0, _key2.default)('body.log.length')(d), _is2.default.num(t) ? t - 1 : t;
 };
-},{"./types/text":183,"utilise/chainable":86,"utilise/colorfill":89,"utilise/emitterify":97,"utilise/err":98,"utilise/header":113,"utilise/identity":114,"utilise/is":118,"utilise/key":120,"utilise/log":125,"utilise/to":171,"utilise/values":174,"utilise/za":178}],183:[function(require,module,exports){
+},{"./types/text":207,"utilise/chainable":86,"utilise/colorfill":89,"utilise/emitterify":97,"utilise/err":98,"utilise/header":113,"utilise/identity":114,"utilise/is":118,"utilise/key":120,"utilise/log":125,"utilise/to":171,"utilise/values":174,"utilise/za":178}],207:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -7715,7 +7875,7 @@ exports.default = {
     return !(0, _includes2.default)('.html')(res.name) && !(0, _includes2.default)('.css')(res.name) && _is2.default.str(res.body);
   }
 };
-},{"utilise/includes":116,"utilise/is":118}],184:[function(require,module,exports){
+},{"utilise/includes":116,"utilise/is":118}],208:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -7746,7 +7906,7 @@ function css(ripple) {
 }
 
 var log = require('utilise/log')('[ri/types/css]');
-},{"utilise/includes":116,"utilise/log":125}],185:[function(require,module,exports){
+},{"utilise/includes":116,"utilise/log":125}],209:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -7803,7 +7963,8 @@ function data(ripple) {
       res.body = (0, _set2.default)()(res.body || [], existing.body && existing.body.log, _is2.default.num(res.headers.log) ? res.headers.log : -1);
       (0, _overwrite2.default)(res.body.on)(listeners(existing));
       res.body.on('change.bubble', function (change) {
-        return ripple.emit('change', [res.name, change], (0, _not2.default)(_is2.default.in(['data'])));
+        ripple.emit('change', ripple.change = [res.name, change], (0, _not2.default)(_is2.default.in(['data'])));
+        delete ripple.change;
       });
 
       return res;
@@ -7821,7 +7982,7 @@ var trickle = function trickle(ripple) {
 
 var log = require('utilise/log')('[ri/types/data]'),
     listeners = (0, _key2.default)('body.on');
-},{"utilise/extend":100,"utilise/header":113,"utilise/is":118,"utilise/key":120,"utilise/log":125,"utilise/not":141,"utilise/overwrite":144,"utilise/set":162}],186:[function(require,module,exports){
+},{"utilise/extend":100,"utilise/header":113,"utilise/is":118,"utilise/key":120,"utilise/log":125,"utilise/not":141,"utilise/overwrite":144,"utilise/set":162}],210:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -7864,7 +8025,7 @@ var log = require('utilise/log')('[ri/types/fn]');
 var to = function to(res) {
   return res.body = (0, _str2.default)(res.body), res;
 };
-},{"utilise/fn":106,"utilise/is":118,"utilise/log":125,"utilise/str":166}],187:[function(require,module,exports){
+},{"utilise/fn":106,"utilise/is":118,"utilise/log":125,"utilise/str":166}],211:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -7948,7 +8109,7 @@ var serialise = function serialise(next) {
 };
 
 var log = require('utilise/log')('[ri/helpers]');
-},{"utilise/by":85,"utilise/def":93,"utilise/fn":106,"utilise/is":118,"utilise/keys":121,"utilise/log":125,"utilise/str":166,"utilise/values":174}],188:[function(require,module,exports){
+},{"utilise/by":85,"utilise/def":93,"utilise/fn":106,"utilise/is":118,"utilise/keys":121,"utilise/log":125,"utilise/str":166,"utilise/values":174}],212:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -8080,7 +8241,7 @@ var css = function css(ripple) {
 
 var log = require('utilise/log')('[ri/precss]'),
     err = require('utilise/err')('[ri/precss]');
-},{"cssscope":189,"utilise/all":79,"utilise/attr":82,"utilise/by":85,"utilise/el":96,"utilise/err":98,"utilise/from":107,"utilise/identity":114,"utilise/is":118,"utilise/key":120,"utilise/log":125,"utilise/not":141,"utilise/proxy":152,"utilise/raw":154,"utilise/str":166,"utilise/values":174}],189:[function(require,module,exports){
+},{"cssscope":213,"utilise/all":79,"utilise/attr":82,"utilise/by":85,"utilise/el":96,"utilise/err":98,"utilise/from":107,"utilise/identity":114,"utilise/is":118,"utilise/key":120,"utilise/log":125,"utilise/not":141,"utilise/proxy":152,"utilise/raw":154,"utilise/str":166,"utilise/values":174}],213:[function(require,module,exports){
 module.exports = function scope(styles, prefix) {
   return styles
     .replace(/^(?!.*:host)([^@%\n]*){/gim, function($1){ return prefix+' '+$1 })       // ... {                 -> tag ... {
@@ -8089,7 +8250,7 @@ module.exports = function scope(styles, prefix) {
     .replace(/:host /gi, prefix + ' ')                                                 // :host ...             -> tag ...
     .replace(/^.*:host-context\((.*)\)/gim, function($1, $2){ return $2+' ' +prefix }) // ... :host-context(..) -> ... tag..
 }
-},{}],190:[function(require,module,exports){
+},{}],214:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {

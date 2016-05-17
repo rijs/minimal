@@ -146,7 +146,6 @@ var render = function render(ripple) {
 
         var name = _ref2[0];
         var values = _ref2[1];
-
         return values.some(function (v, i) {
           var from = (0, attr)(el, name) || '';
           return (0, includes)(v)(from) ? false : (0, attr)(el, name, (from + ' ' + v).trim());
@@ -327,8 +326,10 @@ var resource = function resource(ripple) {
 // batch renders on render frames
 var batch = function batch(ripple) {
   return function (el) {
-    return !el.pending && (el.pending = requestAnimationFrame(function (d) {
-      return delete el.pending, ripple.render(el);
+    return el.pending ? el.pending.push(ripple.change) : (el.pending = [ripple.change], requestAnimationFrame(function (d) {
+      el.change = el.pending;
+      delete el.pending;
+      ripple.render(el);
     }));
   };
 };
@@ -612,7 +613,8 @@ function data(ripple) {
       res.body = (0, set)()(res.body || [], existing.body && existing.body.log, is.num(res.headers.log) ? res.headers.log : -1);
       (0, overwrite)(res.body.on)(listeners(existing));
       res.body.on('change.bubble', function (change) {
-        return ripple.emit('change', [res.name, change], (0, not)(is.in(['data'])));
+        ripple.emit('change', ripple.change = [res.name, change], (0, not)(is.in(['data'])));
+        delete ripple.change;
       });
 
       return res;
