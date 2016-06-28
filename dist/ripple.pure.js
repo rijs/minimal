@@ -4,260 +4,6 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.default = features;/* istanbul ignore next */
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-// -------------------------------------------
-// Extend Components with Features
-// -------------------------------------------
-function features(ripple) {
-  if (!true) return;
-  log('creating');
-  ripple.render = render(ripple)(ripple.render);
-  return ripple;
-}
-
-var render = function render(ripple) {
-  return function (next) {
-    return function (el) {
-      var features = (0, str)((0, attr)(el, 'is')).split(' ').map((0, from)(ripple.resources)).filter((0, header)('content-type', 'application/javascript')),
-          css = (0, str)((0, attr)('css')(el)).split(' ');
-
-      features.filter((0, by)('headers.needs', (0, includes)('[css]'))).map((0, key)('name')).map((0, append)('.css')).filter((0, not)(is.in(css))).map(function (d) {
-        return (0, attr)('css', ((0, str)((0, attr)('css')(el)) + ' ' + d).trim())(el);
-      });
-
-      var node = next(el);
-
-      return !node || !node.state ? undefined : features.map((0, key)('body')).map(function (d) {
-        return d.call(node, node.state);
-      });
-    };
-  };
-};
-
-var log = window.log('[ri/features]');
-},{}],2:[function(require,module,exports){
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = create;
-
-var _rijs = require('rijs.components');
-
-var _rijs2 = _interopRequireDefault(_rijs);
-
-var _rijs3 = require('rijs.singleton');
-
-var _rijs4 = _interopRequireDefault(_rijs3);
-
-var _rijs5 = require('rijs.versioned');
-
-var _rijs6 = _interopRequireDefault(_rijs5);
-
-var _rijs7 = require('rijs.features');
-
-var _rijs8 = _interopRequireDefault(_rijs7);
-
-var _rijs9 = require('rijs.helpers');
-
-var _rijs10 = _interopRequireDefault(_rijs9);
-
-var _rijs11 = require('rijs.precss');
-
-var _rijs12 = _interopRequireDefault(_rijs11);
-
-var _rijs13 = require('rijs.needs');
-
-var _rijs14 = _interopRequireDefault(_rijs13);
-
-var _rijs15 = require('rijs.core');
-
-var _rijs16 = _interopRequireDefault(_rijs15);
-
-var _rijs17 = require('rijs.data');
-
-var _rijs18 = _interopRequireDefault(_rijs17);
-
-var _rijs19 = require('rijs.css');
-
-var _rijs20 = _interopRequireDefault(_rijs19);
-
-var _rijs21 = require('rijs.fn');
-
-var _rijs22 = _interopRequireDefault(_rijs21);
-
-/* istanbul ignore next */
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-!window.ripple && create();
-
-function create(opts) {
-  var ripple = (0, _rijs16.default)(); // empty base collection of resources
-
-  // enrich..
-  (0, _rijs4.default)(ripple); // exposes a single instance
-  (0, _rijs18.default)(ripple); // register data types
-  (0, _rijs20.default)(ripple); // register css types
-  (0, _rijs22.default)(ripple); // register fn types
-  (0, _rijs10.default)(ripple); // expose helper functions and constants
-  (0, _rijs2.default)(ripple); // invoke web components, fn.call(<el>, data)
-  (0, _rijs8.default)(ripple); // extend components with features
-  (0, _rijs14.default)(ripple); // define default attrs for components
-  (0, _rijs12.default)(ripple); // preapplies scoped css
-  (0, _rijs6.default)(ripple); // versioning info and time travel
-  return ripple;
-}
-},{"rijs.components":5,"rijs.core":8,"rijs.css":10,"rijs.data":11,"rijs.features":1,"rijs.fn":12,"rijs.helpers":13,"rijs.needs":3,"rijs.precss":14,"rijs.singleton":16,"rijs.versioned":4}],3:[function(require,module,exports){
-'use strict';
-
-var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; })();
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = needs;
-/* istanbul ignore next */
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-// -------------------------------------------
-// Define Default Attributes for Components
-// -------------------------------------------
-function needs(ripple) {
-  if (!true) return;
-  log('creating');
-  ripple.render = render(ripple)(ripple.render);
-  return ripple;
-}
-
-var render = function render(ripple) {
-  return function (next) {
-    return function (el) {
-      var component = (0, lo)(el.nodeName);
-      if (!(component in ripple.resources)) return;
-
-      var headers = ripple.resources[component].headers,
-          attrs = headers.attrs = headers.attrs || parse(headers.needs, component);
-
-      return attrs.map(function (_ref) {
-        var _ref2 = _slicedToArray(_ref, 2);
-
-        var name = _ref2[0];
-        var values = _ref2[1];
-        return values.some(function (v, i) {
-          var from = (0, attr)(el, name) || '';
-          return (0, includes)(v)(from) ? false : (0, attr)(el, name, (from + ' ' + v).trim());
-        });
-      }).some(Boolean) ? el.draw() : next(el);
-    };
-  };
-};
-
-var parse = function parse() {
-  var attrs = arguments.length <= 0 || arguments[0] === undefined ? '' : arguments[0];
-  var component = arguments[1];
-  return attrs.split('[').slice(1).map((0, replace)(']', '')).map((0, split)('=')).map(function (_ref3) {
-    var _ref4 = _slicedToArray(_ref3, 2);
-
-    var k = _ref4[0];
-    var v = _ref4[1];
-    return v ? [k, v.split(' ')] : k == 'css' ? [k, [component + '.css']] : [k, []];
-  });
-};
-
-var log = window.log('[ri/needs]'),
-    err = window.err('[ri/needs]');
-},{}],4:[function(require,module,exports){
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = version;
-/* istanbul ignore next */
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-// -------------------------------------------
-// Global Versioning and Time Travel
-// -------------------------------------------
-function version(ripple) {
-  log('creating');
-
-  var type = ripple.types['application/data'];
-  ripple.on('change.version', commit(ripple));
-  ripple.version = checkout(ripple);
-  ripple.version.calc = calc(ripple);
-  ripple.version.log = [];
-  return ripple;
-}
-
-var commit = function commit(ripple) {
-  return function (name, change) {
-    return logged(ripple.resources[name]) && ripple.version.log.push((0, values)(ripple.resources).filter((0, by)(logged)).map(index));
-  };
-};
-
-var index = function index(_ref) {
-  var name = _ref.name;
-  var body = _ref.body;
-  return { name: name, index: body.log.length - 1 };
-};
-
-var checkout = function checkout(ripple) {
-  return function (name, index) {
-    return arguments.length == 2 ? resource(ripple)({ name: name, index: index }) : arguments.length == 1 && is.str(name) ? ripple.resources[name].body.log.length - 1 : arguments.length == 1 && is.num(name) ? application(ripple)(name) : arguments.length == 0 ? ripple.version.log.length - 1 : err('could not rollback', name, index);
-  };
-};
-
-var application = function application(ripple) {
-  return function (index) {
-    return ripple.version.log[rel(ripple.version.log, index)].map(resource(ripple));
-  };
-};
-
-var resource = function resource(ripple) {
-  return function (_ref2) {
-    var name = _ref2.name;
-    var index = _ref2.index;
-    return ripple(name, ripple.version.calc(name, index));
-  };
-};
-
-var calc = function calc(ripple) {
-  return function (name, index) {
-    var log = ripple.resources[name].body.log,
-        end = rel(log, index),
-        i = end;
-
-    if (log[end].cache) return log[end].cache;
-
-    while (is.def(log[i].key)) {
-      i--;
-    }var root = (0, clone)(log[i].value);
-    while (i !== end) {
-      (0, set)(log[++i])(root);
-    }return (0, def)(log[end], 'cache', root);
-  };
-};
-
-var rel = function rel(log, index) {
-  return index < 0 ? log.length + index - 1 : index;
-};
-
-var logged = function logged(res) {
-  return res.body.log && res.body.log.max > 0;
-};
-
-var log = window.log('[ri/versioned]'),
-    err = window.err('[ri/versioned]');
-},{}],5:[function(require,module,exports){
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
 exports.default = components;var _data = require('./types/data');
 
 var _data2 = _interopRequireDefault(_data);
@@ -405,7 +151,7 @@ var log = window.log('[ri/components]'),
     customs = true && !!document.registerElement,
     isAttached = customs ? 'html *, :host-context(html) *' : 'html *';
 true && (Element.prototype.matches = Element.prototype.matches || Element.prototype.msMatchesSelector);
-},{"./types/data":6,"./types/fn":7}],6:[function(require,module,exports){
+},{"./types/data":2,"./types/fn":3}],2:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -420,7 +166,7 @@ function data(ripple) {
     return (0, all)('[data~="' + res.name + '"]:not([inert])').map(ripple.draw);
   };
 }
-},{}],7:[function(require,module,exports){
+},{}],3:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -451,7 +197,7 @@ var customs = true && !!document.registerElement,
     customEl = function customEl(d) {
   return (0, includes)('-')(d.name);
 };
-},{}],8:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -545,7 +291,7 @@ var err = window.err('[ri/core]'),
     now = function now(d, t) {
   return t = (0, key)('body.log.length')(d), is.num(t) ? t - 1 : t;
 };
-},{"./types/text":9}],9:[function(require,module,exports){
+},{"./types/text":5}],5:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -559,7 +305,7 @@ exports.default = {
     return !(0, includes)('.html')(res.name) && !(0, includes)('.css')(res.name) && is.str(res.body);
   }
 };
-},{}],10:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -585,7 +331,7 @@ function css(ripple) {
 }
 
 var log = window.log('[ri/types/css]');
-},{}],11:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -632,7 +378,46 @@ var trickle = function trickle(ripple) {
 
 var log = window.log('[ri/types/data]'),
     listeners = (0, key)('body.on');
-},{}],12:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = features;/* istanbul ignore next */
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+// -------------------------------------------
+// Extend Components with Features
+// -------------------------------------------
+function features(ripple) {
+  if (!true) return;
+  log('creating');
+  ripple.render = render(ripple)(ripple.render);
+  return ripple;
+}
+
+var render = function render(ripple) {
+  return function (next) {
+    return function (el) {
+      var features = (0, str)((0, attr)(el, 'is')).split(' ').map((0, from)(ripple.resources)).filter((0, header)('content-type', 'application/javascript')),
+          css = (0, str)((0, attr)('css')(el)).split(' ');
+
+      features.filter((0, by)('headers.needs', (0, includes)('[css]'))).map((0, key)('name')).map((0, append)('.css')).filter((0, not)(is.in(css))).map(function (d) {
+        return (0, attr)('css', ((0, str)((0, attr)('css')(el)) + ' ' + d).trim())(el);
+      });
+
+      var node = next(el);
+
+      return !node || !node.state ? undefined : features.map((0, key)('body')).map(function (d) {
+        return d.call(node.shadowRoot || node, node.state);
+      });
+    };
+  };
+};
+
+var log = window.log('[ri/features]');
+},{}],9:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -663,7 +448,7 @@ var log = window.log('[ri/types/fn]');
 var to = function to(res) {
   return res.body = (0, str)(res.body), res;
 };
-},{}],13:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -715,7 +500,139 @@ var serialise = function serialise(next) {
 };
 
 var log = window.log('[ri/helpers]');
-},{}],14:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = create;
+
+var _rijs = require('rijs.components');
+
+var _rijs2 = _interopRequireDefault(_rijs);
+
+var _rijs3 = require('rijs.singleton');
+
+var _rijs4 = _interopRequireDefault(_rijs3);
+
+var _rijs5 = require('rijs.versioned');
+
+var _rijs6 = _interopRequireDefault(_rijs5);
+
+var _rijs7 = require('rijs.features');
+
+var _rijs8 = _interopRequireDefault(_rijs7);
+
+var _rijs9 = require('rijs.helpers');
+
+var _rijs10 = _interopRequireDefault(_rijs9);
+
+var _rijs11 = require('rijs.precss');
+
+var _rijs12 = _interopRequireDefault(_rijs11);
+
+var _rijs13 = require('rijs.needs');
+
+var _rijs14 = _interopRequireDefault(_rijs13);
+
+var _rijs15 = require('rijs.core');
+
+var _rijs16 = _interopRequireDefault(_rijs15);
+
+var _rijs17 = require('rijs.data');
+
+var _rijs18 = _interopRequireDefault(_rijs17);
+
+var _rijs19 = require('rijs.css');
+
+var _rijs20 = _interopRequireDefault(_rijs19);
+
+var _rijs21 = require('rijs.fn');
+
+var _rijs22 = _interopRequireDefault(_rijs21);
+
+/* istanbul ignore next */
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+!window.ripple && create();
+
+function create(opts) {
+  var ripple = (0, _rijs16.default)(); // empty base collection of resources
+
+  // enrich..
+  (0, _rijs4.default)(ripple); // exposes a single instance
+  (0, _rijs18.default)(ripple); // register data types
+  (0, _rijs20.default)(ripple); // register css types
+  (0, _rijs22.default)(ripple); // register fn types
+  (0, _rijs10.default)(ripple); // expose helper functions and constants
+  (0, _rijs2.default)(ripple); // invoke web components, fn.call(<el>, data)
+  (0, _rijs8.default)(ripple); // extend components with features
+  (0, _rijs14.default)(ripple); // define default attrs for components
+  (0, _rijs12.default)(ripple); // preapplies scoped css
+  (0, _rijs6.default)(ripple); // versioning info and time travel
+  return ripple;
+}
+},{"rijs.components":1,"rijs.core":4,"rijs.css":6,"rijs.data":7,"rijs.features":8,"rijs.fn":9,"rijs.helpers":10,"rijs.needs":12,"rijs.precss":13,"rijs.singleton":15,"rijs.versioned":16}],12:[function(require,module,exports){
+'use strict';
+
+var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; })();
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = needs;
+/* istanbul ignore next */
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+// -------------------------------------------
+// Define Default Attributes for Components
+// -------------------------------------------
+function needs(ripple) {
+  if (!true) return;
+  log('creating');
+  ripple.render = render(ripple)(ripple.render);
+  return ripple;
+}
+
+var render = function render(ripple) {
+  return function (next) {
+    return function (el) {
+      var component = (0, lo)(el.nodeName);
+      if (!(component in ripple.resources)) return;
+
+      var headers = ripple.resources[component].headers,
+          attrs = headers.attrs = headers.attrs || parse(headers.needs, component);
+
+      return attrs.map(function (_ref) {
+        var _ref2 = _slicedToArray(_ref, 2);
+
+        var name = _ref2[0];
+        var values = _ref2[1];
+        return values.some(function (v, i) {
+          var from = (0, attr)(el, name) || '';
+          return (0, includes)(v)(from) ? false : (0, attr)(el, name, (from + ' ' + v).trim());
+        });
+      }).some(Boolean) ? el.draw() : next(el);
+    };
+  };
+};
+
+var parse = function parse() {
+  var attrs = arguments.length <= 0 || arguments[0] === undefined ? '' : arguments[0];
+  var component = arguments[1];
+  return attrs.split('[').slice(1).map((0, replace)(']', '')).map((0, split)('=')).map(function (_ref3) {
+    var _ref4 = _slicedToArray(_ref3, 2);
+
+    var k = _ref4[0];
+    var v = _ref4[1];
+    return v ? [k, v.split(' ')] : k == 'css' ? [k, [component + '.css']] : [k, []];
+  });
+};
+
+var log = window.log('[ri/needs]'),
+    err = window.err('[ri/needs]');
+},{}],13:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -791,7 +708,7 @@ var css = function css(ripple) {
 
 var log = window.log('[ri/precss]'),
     err = window.err('[ri/precss]');
-},{"cssscope":15}],15:[function(require,module,exports){
+},{"cssscope":14}],14:[function(require,module,exports){
 module.exports = function scope(styles, prefix) {
   return styles
     .replace(/^(?!.*:host)([^@%\n]*){/gim, function($1){ return prefix+' '+$1 })       // ... {                 -> tag ... {
@@ -800,7 +717,7 @@ module.exports = function scope(styles, prefix) {
     .replace(/:host /gi, prefix + ' ')                                                 // :host ...             -> tag ...
     .replace(/^.*:host-context\((.*)\)/gim, function($1, $2){ return $2+' ' +prefix }) // ... :host-context(..) -> ... tag..
 }
-},{}],16:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 'use strict';
 
 Object.defineProperty(exports, "__esModule", {
@@ -820,4 +737,87 @@ function singleton(ripple) {
 }
 
 var log = window.log('[ri/singleton]');
-},{}]},{},[2]);
+},{}],16:[function(require,module,exports){
+'use strict';
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = version;
+/* istanbul ignore next */
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+// -------------------------------------------
+// Global Versioning and Time Travel
+// -------------------------------------------
+function version(ripple) {
+  log('creating');
+
+  var type = ripple.types['application/data'];
+  ripple.on('change.version', commit(ripple));
+  ripple.version = checkout(ripple);
+  ripple.version.calc = calc(ripple);
+  ripple.version.log = [];
+  return ripple;
+}
+
+var commit = function commit(ripple) {
+  return function (name, change) {
+    return logged(ripple.resources[name]) && ripple.version.log.push((0, values)(ripple.resources).filter((0, by)(logged)).map(index));
+  };
+};
+
+var index = function index(_ref) {
+  var name = _ref.name;
+  var body = _ref.body;
+  return { name: name, index: body.log.length - 1 };
+};
+
+var checkout = function checkout(ripple) {
+  return function (name, index) {
+    return arguments.length == 2 ? resource(ripple)({ name: name, index: index }) : arguments.length == 1 && is.str(name) ? ripple.resources[name].body.log.length - 1 : arguments.length == 1 && is.num(name) ? application(ripple)(name) : arguments.length == 0 ? ripple.version.log.length - 1 : err('could not rollback', name, index);
+  };
+};
+
+var application = function application(ripple) {
+  return function (index) {
+    return ripple.version.log[rel(ripple.version.log, index)].map(resource(ripple));
+  };
+};
+
+var resource = function resource(ripple) {
+  return function (_ref2) {
+    var name = _ref2.name;
+    var index = _ref2.index;
+    return ripple(name, ripple.version.calc(name, index));
+  };
+};
+
+var calc = function calc(ripple) {
+  return function (name, index) {
+    var log = ripple.resources[name].body.log,
+        end = rel(log, index),
+        i = end;
+
+    if (log[end].cache) return log[end].cache;
+
+    while (is.def(log[i].key)) {
+      i--;
+    }var root = (0, clone)(log[i].value);
+    while (i !== end) {
+      (0, set)(log[++i])(root);
+    }return (0, def)(log[end], 'cache', root);
+  };
+};
+
+var rel = function rel(log, index) {
+  return index < 0 ? log.length + index - 1 : index;
+};
+
+var logged = function logged(res) {
+  return res.body.log && res.body.log.max > 0;
+};
+
+var log = window.log('[ri/versioned]'),
+    err = window.err('[ri/versioned]');
+},{}]},{},[11]);
