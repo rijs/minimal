@@ -6,6 +6,8 @@ module.exports = function (file) {
     contents = contents.replace(/^.*utilise\/client[^]*?var (.*) = _interop.*$/gm, '')
     contents = contents.replace(/_client2.default/gm, 'true')
     contents = contents.replace(/require\('utilise\/client'\)/gi, 'true')
+    contents = contents.replace(/client (\?|&)/gi, 'true $1')
+    contents = contents.replace(/process./gi, '(0).')
 
     // TODO minify only
     // remove log statements

@@ -1,823 +1,535 @@
-(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = components;var _data = require('./types/data');
-
-var _data2 = _interopRequireDefault(_data);
-
-var _fn = require('./types/fn');
-
-var _fn2 = _interopRequireDefault(_fn);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-// -------------------------------------------
-// API: Renders specific nodes, resources or everything
-// -------------------------------------------
-// ripple.draw()                 - redraw all components on page
-// ripple.draw(element)          - redraw specific element
-// ripple.draw.call(element)     - redraw specific element
-// ripple.draw.call(selection)   - redraw D3 selection
-// ripple.draw('name')           - redraw elements that depend on resource
-// ripple.draw({ ... })          - redraw elements that depend on resource
-// MutationObserver(ripple.draw) - redraws element being observed
-
-function components(ripple) {
-  if (!true) return ripple;
-  log('creating');
-
-  (0, values)(ripple.types).map(function (type) {
-    return type.parse = (0, proxy)(type.parse, clean(ripple));
-  });
-  (0, key)('types.application/javascript.render', function (d) {
-    return (0, _fn2.default)(ripple);
-  })(ripple);
-  (0, key)('types.application/data.render', function (d) {
-    return (0, _data2.default)(ripple);
-  })(ripple);
-  ripple.draw = Node.prototype.draw = draw(ripple);
-  ripple.render = render(ripple);
-  ripple.on('change.draw', ripple.draw);
-  (0, time)(0, ripple.draw);
-  return ripple;
-}
-
-// public draw api
-function draw(ripple) {
-  return function (thing) {
-    return this && this.nodeName ? invoke(ripple)(this) : this && this.node ? invoke(ripple)(this.node()) : !thing ? everything(ripple) : thing instanceof mutation ? invoke(ripple)(thing.target) : thing[0] instanceof mutation ? invoke(ripple)(thing[0].target) : thing.nodeName ? invoke(ripple)(thing) : thing.node ? invoke(ripple)(thing.node()) : thing.name ? resource(ripple)(thing.name) : is.str(thing) ? resource(ripple)(thing) : err('could not update', thing);
-  };
-}
-
-// render all components
-var everything = function everything(ripple) {
-  var selector = (0, values)(ripple.resources).filter((0, header)('content-type', 'application/javascript')).map((0, key)('name')).join(',');
-
-  return !selector ? [] : (0, all)(selector).map(invoke(ripple));
-};
-
-// render all elements that depend on the resource
-var resource = function resource(ripple) {
-  return function (name) {
-    var res = ripple.resources[name],
-        type = (0, header)('content-type')(res);
-
-    return (ripple.types[type].render || noop)(res);
-  };
-};
-
-// batch renders on render frames
-var batch = function batch(ripple) {
-  return function (el) {
-    return el.pending ? el.pending.push(ripple.change) : (el.pending = [ripple.change], requestAnimationFrame(function (d) {
-      el.change = el.pending;
-      delete el.pending;
-      ripple.render(el);
-    }));
-  };
-};
-
-// main function to render a particular custom element with any data it needs
-var invoke = function invoke(ripple) {
-  return function (el) {
-    if (!(0, includes)('-')(el.nodeName)) return;
-    if (el.nodeName == '#document-fragment') return invoke(ripple)(el.host);
-    if (el.nodeName == '#text') return invoke(ripple)(el.parentNode);
-    if (!el.matches(isAttached)) return;
-    if ((0, attr)(el, 'inert') != null) return;
-    return batch(ripple)(el), el;
-  };
-};
-
-var render = function render(ripple) {
-  return function (el) {
-    var name = (0, lo)(el.tagName),
-        deps = (0, attr)(el, 'data'),
-        fn = (0, body)(ripple)(name),
-        data = bodies(ripple)(deps);
-
-    if (!fn) return el;
-    if (deps && !data) return el;
-
-    try {
-      fn.call(el.shadowRoot || el, defaults(el, data), index(el));
-    } catch (e) {
-      err(e, e.stack);
+!function e(t, n, r) {
+    function s(o, u) {
+        if (!n[o]) {
+            if (!t[o]) {
+                var a = "function" == typeof require && require;
+                if (!u && a) return a(o, !0);
+                if (i) return i(o, !0);
+                var f = new Error("Cannot find module '" + o + "'");
+                throw f.code = "MODULE_NOT_FOUND", f;
+            }
+            var l = n[o] = {
+                exports: {}
+            };
+            t[o][0].call(l.exports, function(e) {
+                var n = t[o][1][e];
+                return s(n ? n : e);
+            }, l, l.exports, e, t, n, r);
+        }
+        return n[o].exports;
     }
-
-    return el;
-  };
-};
-
-// clean local headers for transport
-var clean = function clean(ripple) {
-  return function (res) {
-    return delete res.headers.pending, res;
-  };
-};
-
-// helpers
-var defaults = function defaults(el, data) {
-  el.state = el.state || {};
-  (0, overwrite)(el.state)(data);
-  (0, overwrite)(el.state)(el.__data__);
-  el.__data__ = el.state;
-  return el.state;
-};
-
-var bodies = function bodies(ripple) {
-  return function (deps) {
-    var o = {},
-        names = deps ? deps.split(' ') : [];
-
-    names.map(function (d) {
-      return o[d] = (0, body)(ripple)(d);
-    });
-
-    return !names.length ? undefined : (0, values)(o).some(is.falsy) ? undefined : o;
-  };
-};
-
-var index = function index(el) {
-  return Array.prototype.indexOf.call((0, key)('parentNode.children')(el) || [], el);
-};
-
-var log = window.log('[ri/components]'),
-    err = window.err('[ri/components]'),
-    mutation = true && window.MutationRecord || noop,
-    customs = true && !!document.registerElement,
-    isAttached = customs ? 'html *, :host-context(html) *' : 'html *';
-true && (Element.prototype.matches = Element.prototype.matches || Element.prototype.msMatchesSelector);
-},{"./types/data":2,"./types/fn":3}],2:[function(require,module,exports){
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = data;
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-// render all elements that require the specified data
-function data(ripple) {
-  return function (res) {
-    return (0, all)('[data~="' + res.name + '"]:not([inert])').map(ripple.draw);
-  };
-}
-},{}],3:[function(require,module,exports){
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = fn;
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-// register custom element prototype (render is automatic)
-function fn(ripple) {
-  return function (res) {
-    if (!customs || !customEl(res) || registered(res)) return (0, all)(res.name + ':not([inert])\n                 ,[is="' + res.name + '"]:not([inert])').map(ripple.draw);
-
-    var proto = Object.create(HTMLElement.prototype),
-        opts = { prototype: proto };
-
-    proto.attachedCallback = ripple.draw;
-    document.registerElement(res.name, opts);
-  };
-}
-
-var registered = function registered(res) {
-  return document.createElement(res.name).attachedCallback;
-};
-
-var customs = true && !!document.registerElement,
-    customEl = function customEl(d) {
-  return (0, includes)('-')(d.name);
-};
-},{}],4:[function(require,module,exports){
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = core;
-var _text = require('./types/text');
-
-var _text2 = _interopRequireDefault(_text);
-
-/* istanbul ignore next */
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-// -------------------------------------------
-// API: Gets or sets a resource
-// -------------------------------------------
-// ripple('name')     - returns the resource body if it exists
-// ripple('name')     - creates & returns resource if it doesn't exist
-// ripple('name', {}) - creates & returns resource, with specified name and body
-// ripple({ ... })    - creates & returns resource, with specified name, body and headers
-// ripple.resources   - returns raw resources
-// ripple.resource    - alias for ripple, returns ripple instead of resource for method chaining
-// ripple.register    - alias for ripple
-// ripple.on          - event listener for changes - all resources
-// ripple('name').on  - event listener for changes - resource-specific
-
-function core() {
-  log('creating');
-
-  var resources = {};
-  ripple.resources = resources;
-  ripple.resource = (0, chainable)(ripple);
-  ripple.register = ripple;
-  ripple.types = types();
-  return (0, emitterify)(ripple);
-
-  function ripple(name, body, headers) {
-    return !name ? ripple : is.arr(name) ? name.map(ripple) : is.obj(name) && !name.name ? ripple : is.fn(name) && name.resources ? ripple((0, values)(name.resources)) : is.str(name) && !body && resources[name] ? resources[name].body : is.str(name) && !body && !resources[name] ? register(ripple)({ name: name }) : is.str(name) && body ? register(ripple)({ name: name, body: body, headers: headers }) : is.obj(name) && !is.arr(name) ? register(ripple)(name) : (err('could not find or create resource', name), false);
-  }
-}
-
-var register = function register(ripple) {
-  return function (_ref) {
-    var name = _ref.name;
-    var body = _ref.body;
-    var _ref$headers = _ref.headers;
-    var headers = _ref$headers === undefined ? {} : _ref$headers;
-
-    log('registering', name);
-    var res = normalise(ripple)({ name: name, body: body, headers: headers });
-
-    if (!res) return err('failed to register', name), false;
-    ripple.resources[name] = res;
-    ripple.emit('change', [name, {
-      type: 'update',
-      value: res.body,
-      time: now(res)
-    }]);
-    return ripple.resources[name].body;
-  };
-};
-
-var normalise = function normalise(ripple) {
-  return function (res) {
-    if (!(0, header)('content-type')(res)) (0, values)(ripple.types).sort((0, za)('priority')).some(contentType(res));
-    if (!(0, header)('content-type')(res)) return err('could not understand resource', res), false;
-    return parse(ripple)(res);
-  };
-};
-
-var parse = function parse(ripple) {
-  return function (res) {
-    var type = (0, header)('content-type')(res);
-    if (!ripple.types[type]) return err('could not understand type', type), false;
-    return (ripple.types[type].parse || identity)(res);
-  };
-};
-
-var contentType = function contentType(res) {
-  return function (type) {
-    return type.check(res) && (res.headers['content-type'] = type.header);
-  };
-};
-
-var types = function types() {
-  return [_text2.default].reduce(to.obj('header'), 1);
-};
-
-var err = window.err('[ri/core]'),
-    log = window.log('[ri/core]'),
-    now = function now(d, t) {
-  return t = (0, key)('body.log.length')(d), is.num(t) ? t - 1 : t;
-};
-},{"./types/text":5}],5:[function(require,module,exports){
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});/* istanbul ignore next */
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-exports.default = {
-  header: 'text/plain',
-  check: function check(res) {
-    return !(0, includes)('.html')(res.name) && !(0, includes)('.css')(res.name) && is.str(res.body);
-  }
-};
-},{}],6:[function(require,module,exports){
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = css;
-/* istanbul ignore next */
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-// -------------------------------------------
-// Exposes a convenient global instance
-// -------------------------------------------
-function css(ripple) {
-  log('creating');
-  ripple.types['text/css'] = {
-    header: 'text/css',
-    check: function check(res) {
-      return (0, includes)('.css')(res.name);
-    }
-  };
-
-  return ripple;
-}
-
-var log = window.log('[ri/types/css]');
-},{}],7:[function(require,module,exports){
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = data;
-/* istanbul ignore next */
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-// -------------------------------------------
-// Adds support for data resources
-// -------------------------------------------
-function data(ripple) {
-  log('creating');
-  ripple.on('change.data', trickle(ripple));
-  ripple.types['application/data'] = {
-    header: 'application/data',
-    check: function check(res) {
-      return is.obj(res.body) || !res.body ? true : false;
-    },
-    parse: function parse(res) {
-      var existing = ripple.resources[res.name] || {};
-
-      (0, extend)(res.headers)(existing.headers);
-      res.body = (0, set)()(res.body || [], existing.body && existing.body.log, is.num(res.headers.log) ? res.headers.log : -1);
-      (0, overwrite)(res.body.on)(listeners(existing));
-      res.body.on('change.bubble', function (change) {
-        ripple.emit('change', ripple.change = [res.name, change], (0, not)(is.in(['data'])));
-        delete ripple.change;
-      });
-
-      return res;
-    }
-  };
-
-  return ripple;
-}
-
-var trickle = function trickle(ripple) {
-  return function (name, change) {
-    return (0, header)('content-type', 'application/data')(ripple.resources[name]) && ripple.resources[name].body.emit('change', [change || null], (0, not)(is.in(['bubble'])));
-  };
-};
-
-var log = window.log('[ri/types/data]'),
-    listeners = (0, key)('body.on');
-},{}],8:[function(require,module,exports){
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = features;/* istanbul ignore next */
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-// -------------------------------------------
-// Extend Components with Features
-// -------------------------------------------
-function features(ripple) {
-  if (!true) return;
-  log('creating');
-  ripple.render = render(ripple)(ripple.render);
-  return ripple;
-}
-
-var render = function render(ripple) {
-  return function (next) {
-    return function (el) {
-      var features = (0, str)((0, attr)(el, 'is')).split(' ').map((0, from)(ripple.resources)).filter((0, header)('content-type', 'application/javascript')),
-          css = (0, str)((0, attr)('css')(el)).split(' ');
-
-      features.filter((0, by)('headers.needs', (0, includes)('[css]'))).map((0, key)('name')).map((0, append)('.css')).filter((0, not)(is.in(css))).map(function (d) {
-        return (0, attr)('css', ((0, str)((0, attr)('css')(el)) + ' ' + d).trim())(el);
-      });
-
-      var node = next(el);
-
-      return !node || !node.state ? undefined : features.map((0, key)('body')).map(function (d) {
-        return d.call(node.shadowRoot || node, node.state);
-      });
-    };
-  };
-};
-
-var log = window.log('[ri/features]');
-},{}],9:[function(require,module,exports){
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = fnc;
-
-/* istanbul ignore next */
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-// -------------------------------------------
-// Adds support for function resources
-// -------------------------------------------
-function fnc(ripple) {
-  log('creating');
-  ripple.types['application/javascript'] = { header: header, check: check, parse: parse, to: to };
-  return ripple;
-}
-
-var header = 'application/javascript';
-var check = function check(res) {
-  return is.fn(res.body);
-};
-var parse = function parse(res) {
-  return res.body = (0, fn)(res.body), res;
-};
-var log = window.log('[ri/types/fn]');
-var to = function to(res) {
-  return res.body = (0, str)(res.body), res;
-};
-},{}],10:[function(require,module,exports){
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = helpers;/* istanbul ignore next */
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-// -------------------------------------------
-// Attach Helper Functions for Resources
-// -------------------------------------------
-function helpers(ripple) {
-  log('creating');
-
-  var type = ripple.types['application/data'];
-  type.parse = attach(type.parse);
-  if (!true) type.to = serialise(type.to);
-  return ripple;
-}
-
-var attach = function attach(next) {
-  return function (res) {
-    if (next) res = next(res);
-    var helpers = res.headers.helpers;
-
-    (0, keys)(helpers).map(function (name) {
-      return helpers[name] = (0, fn)(helpers[name]), name;
-    }).map(function (name) {
-      return (0, def)(res.body, name, helpers[name]);
-    });
-
-    return res;
-  };
-};
-
-var serialise = function serialise(next) {
-  return function (res, change) {
-    if (change) return next ? next.call(this, res, change) : true;
-    var helpers = res.headers.helpers;
-
-    (0, keys)(helpers).filter(function (name) {
-      return is.fn(helpers[name]);
-    }).map(function (name) {
-      return helpers[name] = (0, str)(helpers[name]);
-    });
-
-    return next ? next.call(this, res, change) : res;
-  };
-};
-
-var log = window.log('[ri/helpers]');
-},{}],11:[function(require,module,exports){
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = create;
-
-var _rijs = require('rijs.components');
-
-var _rijs2 = _interopRequireDefault(_rijs);
-
-var _rijs3 = require('rijs.singleton');
-
-var _rijs4 = _interopRequireDefault(_rijs3);
-
-var _rijs5 = require('rijs.versioned');
-
-var _rijs6 = _interopRequireDefault(_rijs5);
-
-var _rijs7 = require('rijs.features');
-
-var _rijs8 = _interopRequireDefault(_rijs7);
-
-var _rijs9 = require('rijs.helpers');
-
-var _rijs10 = _interopRequireDefault(_rijs9);
-
-var _rijs11 = require('rijs.precss');
-
-var _rijs12 = _interopRequireDefault(_rijs11);
-
-var _rijs13 = require('rijs.needs');
-
-var _rijs14 = _interopRequireDefault(_rijs13);
-
-var _rijs15 = require('rijs.core');
-
-var _rijs16 = _interopRequireDefault(_rijs15);
-
-var _rijs17 = require('rijs.data');
-
-var _rijs18 = _interopRequireDefault(_rijs17);
-
-var _rijs19 = require('rijs.css');
-
-var _rijs20 = _interopRequireDefault(_rijs19);
-
-var _rijs21 = require('rijs.fn');
-
-var _rijs22 = _interopRequireDefault(_rijs21);
-
-/* istanbul ignore next */
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-!window.ripple && create();
-
-function create(opts) {
-  var ripple = (0, _rijs16.default)(); // empty base collection of resources
-
-  // enrich..
-  (0, _rijs4.default)(ripple); // exposes a single instance
-  (0, _rijs18.default)(ripple); // register data types
-  (0, _rijs20.default)(ripple); // register css types
-  (0, _rijs22.default)(ripple); // register fn types
-  (0, _rijs10.default)(ripple); // expose helper functions and constants
-  (0, _rijs2.default)(ripple); // invoke web components, fn.call(<el>, data)
-  (0, _rijs8.default)(ripple); // extend components with features
-  (0, _rijs14.default)(ripple); // define default attrs for components
-  (0, _rijs12.default)(ripple); // preapplies scoped css
-  (0, _rijs6.default)(ripple); // versioning info and time travel
-  return ripple;
-}
-},{"rijs.components":1,"rijs.core":4,"rijs.css":6,"rijs.data":7,"rijs.features":8,"rijs.fn":9,"rijs.helpers":10,"rijs.needs":12,"rijs.precss":13,"rijs.singleton":15,"rijs.versioned":16}],12:[function(require,module,exports){
-'use strict';
-
-var _slicedToArray = (function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; })();
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = needs;
-/* istanbul ignore next */
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-// -------------------------------------------
-// Define Default Attributes for Components
-// -------------------------------------------
-function needs(ripple) {
-  if (!true) return;
-  log('creating');
-  ripple.render = render(ripple)(ripple.render);
-  return ripple;
-}
-
-var render = function render(ripple) {
-  return function (next) {
-    return function (el) {
-      var component = (0, lo)(el.nodeName);
-      if (!(component in ripple.resources)) return;
-
-      var headers = ripple.resources[component].headers,
-          attrs = headers.attrs = headers.attrs || parse(headers.needs, component);
-
-      return attrs.map(function (_ref) {
-        var _ref2 = _slicedToArray(_ref, 2);
-
-        var name = _ref2[0];
-        var values = _ref2[1];
-        return values.some(function (v, i) {
-          var from = (0, attr)(el, name) || '';
-          return (0, includes)(v)(from) ? false : (0, attr)(el, name, (from + ' ' + v).trim());
-        });
-      }).some(Boolean) ? el.draw() : next(el);
-    };
-  };
-};
-
-var parse = function parse() {
-  var attrs = arguments.length <= 0 || arguments[0] === undefined ? '' : arguments[0];
-  var component = arguments[1];
-  return attrs.split('[').slice(1).map((0, replace)(']', '')).map((0, split)('=')).map(function (_ref3) {
-    var _ref4 = _slicedToArray(_ref3, 2);
-
-    var k = _ref4[0];
-    var v = _ref4[1];
-    return v ? [k, v.split(' ')] : k == 'css' ? [k, [component + '.css']] : [k, []];
-  });
-};
-
-var log = window.log('[ri/needs]'),
-    err = window.err('[ri/needs]');
-},{}],13:[function(require,module,exports){
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = precss;var _cssscope = require('cssscope');
-
-var _cssscope2 = _interopRequireDefault(_cssscope);
-
-/* istanbul ignore next */
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-// -------------------------------------------
-// API: Pre-applies Scoped CSS [css=name]
-// -------------------------------------------
-function precss(ripple) {
-  if (!true) return;
-  log('creating');
-
-  ripple.render = render(ripple)(ripple.render);
-
-  (0, values)(ripple.types).filter((0, by)('header', 'text/css')).map(function (type) {
-    return type.render = (0, proxy)(type.render, css(ripple));
-  });
-
-  return ripple;
-}
-
-var render = function render(ripple) {
-  return function (next) {
-    return function (host) {
-      var css = (0, str)((0, attr)(host, 'css')).split(' ').filter(Boolean),
-          root = host.shadowRoot || host,
-          head = document.head,
-          shadow = head.createShadowRoot && host.shadowRoot,
-          styles;
-
-      // this host does not have a css dep, continue with rest of rendering pipeline
-      if (!css.length) return next(host);
-
-      // this host has a css dep, but it is not loaded yet - stop rendering this host
-      if (css.some((0, not)(is.in(ripple.resources)))) return;
-
-      // retrieve styles
-      styles = css.map((0, from)(ripple.resources)).map((0, key)('body')).map(shadow ? identity : transform(css));
-
-      // reuse or create style tag
-      css.map(function (d) {
-        return (0, raw)('style[resource="' + d + '"]', shadow ? root : head) || (0, el)('style[resource=' + d + ']');
-      }).map((0, key)('innerHTML', function (d, i) {
-        return styles[i];
-      })).filter((0, not)((0, by)('parentNode'))).map(function (d) {
-        return shadow ? root.insertBefore(d, root.firstChild) : head.appendChild(d);
-      });
-
-      // continue with rest of the rendering pipeline
-      return next(host);
-    };
-  };
-};
-
-var transform = function transform(names) {
-  return function (styles, i) {
-    return (0, _cssscope2.default)(styles, '[css~="' + names[i] + '"]');
-  };
-};
-
-var css = function css(ripple) {
-  return function (res) {
-    return (0, all)('[css~="' + res.name + '"]:not([inert])').map(ripple.draw);
-  };
-};
-
-var log = window.log('[ri/precss]'),
-    err = window.err('[ri/precss]');
-},{"cssscope":14}],14:[function(require,module,exports){
-module.exports = function scope(styles, prefix) {
-  return styles
-    .replace(/^(?!.*:host)([^@%\n]*){/gim, function($1){ return prefix+' '+$1 })       // ... {                 -> tag ... {
-    .replace(/^(?!.*:host)(.*?),\s*$/gim, function($1){ return prefix+' '+$1 })        // ... ,                 -> tag ... ,
-    .replace(/:host\((.*?)\)/gi, function($1, $2){ return prefix+$2 })                 // :host(...)            -> tag...
-    .replace(/:host /gi, prefix + ' ')                                                 // :host ...             -> tag ...
-    .replace(/^.*:host-context\((.*)\)/gim, function($1, $2){ return $2+' ' +prefix }) // ... :host-context(..) -> ... tag..
-}
-},{}],15:[function(require,module,exports){
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = singleton;
-/* istanbul ignore next */
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-// -------------------------------------------
-// Exposes a convenient global instance
-// -------------------------------------------
-function singleton(ripple) {
-  log('creating');
-  if (!owner.ripple) owner.ripple = ripple;
-  return ripple;
-}
-
-var log = window.log('[ri/singleton]');
-},{}],16:[function(require,module,exports){
-'use strict';
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = version;
-/* istanbul ignore next */
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-// -------------------------------------------
-// Global Versioning and Time Travel
-// -------------------------------------------
-function version(ripple) {
-  log('creating');
-
-  var type = ripple.types['application/data'];
-  ripple.on('change.version', commit(ripple));
-  ripple.version = checkout(ripple);
-  ripple.version.calc = calc(ripple);
-  ripple.version.log = [];
-  return ripple;
-}
-
-var commit = function commit(ripple) {
-  return function (name, change) {
-    return logged(ripple.resources[name]) && ripple.version.log.push((0, values)(ripple.resources).filter((0, by)(logged)).map(index));
-  };
-};
-
-var index = function index(_ref) {
-  var name = _ref.name;
-  var body = _ref.body;
-  return { name: name, index: body.log.length - 1 };
-};
-
-var checkout = function checkout(ripple) {
-  return function (name, index) {
-    return arguments.length == 2 ? resource(ripple)({ name: name, index: index }) : arguments.length == 1 && is.str(name) ? ripple.resources[name].body.log.length - 1 : arguments.length == 1 && is.num(name) ? application(ripple)(name) : arguments.length == 0 ? ripple.version.log.length - 1 : err('could not rollback', name, index);
-  };
-};
-
-var application = function application(ripple) {
-  return function (index) {
-    return ripple.version.log[rel(ripple.version.log, index)].map(resource(ripple));
-  };
-};
-
-var resource = function resource(ripple) {
-  return function (_ref2) {
-    var name = _ref2.name;
-    var index = _ref2.index;
-    return ripple(name, ripple.version.calc(name, index));
-  };
-};
-
-var calc = function calc(ripple) {
-  return function (name, index) {
-    var log = ripple.resources[name].body.log,
-        end = rel(log, index),
-        i = end;
-
-    if (log[end].cache) return log[end].cache;
-
-    while (is.def(log[i].key)) {
-      i--;
-    }var root = (0, clone)(log[i].value);
-    while (i !== end) {
-      (0, set)(log[++i])(root);
-    }return (0, def)(log[end], 'cache', root);
-  };
-};
-
-var rel = function rel(log, index) {
-  return index < 0 ? log.length + index - 1 : index;
-};
-
-var logged = function logged(res) {
-  return res.body.log && res.body.log.max > 0;
-};
-
-var log = window.log('[ri/versioned]'),
-    err = window.err('[ri/versioned]');
-},{}]},{},[11]);
+    for (var i = "function" == typeof require && require, o = 0; o < r.length; o++) s(r[o]);
+    return s;
+}({
+    1: [ function(require, module, exports) {
+        "use strict";
+        function _interopRequireDefault(obj) {
+            return obj && obj.__esModule ? obj : {
+                "default": obj
+            };
+        }
+        function create(opts) {
+            var ripple = (0, _rijs16["default"])();
+            return (0, _rijs4["default"])(ripple), (0, _rijs18["default"])(ripple), (0, _rijs20["default"])(ripple), 
+            (0, _rijs22["default"])(ripple), (0, _rijs10["default"])(ripple), (0, _rijs2["default"])(ripple), 
+            (0, _rijs8["default"])(ripple), (0, _rijs14["default"])(ripple), (0, _rijs12["default"])(ripple), 
+            (0, _rijs6["default"])(ripple), ripple;
+        }
+        Object.defineProperty(exports, "__esModule", {
+            value: !0
+        }), exports["default"] = create;
+        var _rijs = require("rijs.components"), _rijs2 = _interopRequireDefault(_rijs), _rijs3 = require("rijs.singleton"), _rijs4 = _interopRequireDefault(_rijs3), _rijs5 = require("rijs.versioned"), _rijs6 = _interopRequireDefault(_rijs5), _rijs7 = require("rijs.features"), _rijs8 = _interopRequireDefault(_rijs7), _rijs9 = require("rijs.helpers"), _rijs10 = _interopRequireDefault(_rijs9), _rijs11 = require("rijs.precss"), _rijs12 = _interopRequireDefault(_rijs11), _rijs13 = require("rijs.needs"), _rijs14 = _interopRequireDefault(_rijs13), _rijs15 = require("rijs.core"), _rijs16 = _interopRequireDefault(_rijs15), _rijs17 = require("rijs.data"), _rijs18 = _interopRequireDefault(_rijs17), _rijs19 = require("rijs.css"), _rijs20 = _interopRequireDefault(_rijs19), _rijs21 = require("rijs.fn"), _rijs22 = _interopRequireDefault(_rijs21);
+        !window.ripple && create();
+    }, {
+        "rijs.components": 3,
+        "rijs.core": 6,
+        "rijs.css": 8,
+        "rijs.data": 9,
+        "rijs.features": 10,
+        "rijs.fn": 11,
+        "rijs.helpers": 12,
+        "rijs.needs": 13,
+        "rijs.precss": 14,
+        "rijs.singleton": 15,
+        "rijs.versioned": 16
+    } ],
+    2: [ function(require, module, exports) {
+        module.exports = function(styles, prefix) {
+            return styles.replace(/^(?!.*:host)([^@%\n]*){/gim, function($1) {
+                return prefix + " " + $1;
+            }).replace(/^(?!.*:host)(.*?),\s*$/gim, function($1) {
+                return prefix + " " + $1;
+            }).replace(/:host\((.*?)\)/gi, function($1, $2) {
+                return prefix + $2;
+            }).replace(/:host /gi, prefix + " ").replace(/^.*:host-context\((.*)\)/gim, function($1, $2) {
+                return $2 + " " + prefix;
+            });
+        };
+    }, {} ],
+    3: [ function(require, module, exports) {
+        "use strict";
+        function _interopRequireDefault(obj) {
+            return obj && obj.__esModule ? obj : {
+                "default": obj
+            };
+        }
+        function components(ripple) {
+            return log("creating"), values(ripple.types).map(function(type) {
+                return type.parse = proxy(type.parse, clean(ripple));
+            }), key("types.application/javascript.render", function(d) {
+                return (0, _fn2["default"])(ripple);
+            })(ripple), key("types.application/data.render", function(d) {
+                return (0, _data2["default"])(ripple);
+            })(ripple), ripple.draw = Node.prototype.draw = draw(ripple), ripple.render = render(ripple), 
+            ripple.on("change.draw", ripple.draw), time(0, ripple.draw), ripple;
+        }
+        function draw(ripple) {
+            return function(thing) {
+                return this && this.nodeName ? invoke(ripple)(this) : this && this.node ? invoke(ripple)(this.node()) : thing ? thing instanceof mutation ? invoke(ripple)(thing.target) : thing[0] instanceof mutation ? invoke(ripple)(thing[0].target) : thing.nodeName ? invoke(ripple)(thing) : thing.node ? invoke(ripple)(thing.node()) : thing.name ? resource(ripple)(thing.name) : is.str(thing) ? resource(ripple)(thing) : err("could not update", thing) : everything(ripple);
+            };
+        }
+        Object.defineProperty(exports, "__esModule", {
+            value: !0
+        }), exports["default"] = components;
+        var _data = require("./types/data"), _data2 = _interopRequireDefault(_data), _fn = require("./types/fn"), _fn2 = _interopRequireDefault(_fn), everything = function(ripple) {
+            var selector = values(ripple.resources).filter(header("content-type", "application/javascript")).map(key("name")).join(",");
+            return selector ? all(selector).map(invoke(ripple)) : [];
+        }, resource = function(ripple) {
+            return function(name) {
+                var res = ripple.resources[name], type = header("content-type")(res);
+                return (ripple.types[type].render || noop)(res);
+            };
+        }, batch = function(ripple) {
+            return function(el) {
+                return el.pending ? el.pending.push(ripple.change) : (el.pending = [ ripple.change ], 
+                requestAnimationFrame(function(d) {
+                    el.change = el.pending, delete el.pending, ripple.render(el);
+                }));
+            };
+        }, invoke = function invoke(ripple) {
+            return function(el) {
+                if (includes("-")(el.nodeName)) {
+                    if ("#document-fragment" == el.nodeName) return invoke(ripple)(el.host);
+                    if ("#text" == el.nodeName) return invoke(ripple)(el.parentNode);
+                    if (el.matches(isAttached) && null == attr(el, "inert")) return batch(ripple)(el), 
+                    el;
+                }
+            };
+        }, render = function(ripple) {
+            return function(el) {
+                var name = lo(el.tagName), deps = attr(el, "data"), fn = body(ripple)(name), data = bodies(ripple)(deps), root = el.shadowRoot || el;
+                if (!fn) return el;
+                if (deps && !data) return el;
+                try {
+                    fn.call(root, defaults(el, data), index(el), root);
+                } catch (e) {
+                    err(e, e.stack);
+                }
+                return el;
+            };
+        }, clean = function(ripple) {
+            return function(res) {
+                return delete res.headers.pending, res;
+            };
+        }, defaults = function(el, data) {
+            return el.state = el.state || {}, overwrite(el.state)(data), overwrite(el.state)(el.__data__), 
+            el.__data__ = el.state, el.state;
+        }, bodies = function(ripple) {
+            return function(deps) {
+                var o = {}, names = deps ? deps.split(" ") : [];
+                return names.map(function(d) {
+                    return o[d] = body(ripple)(d);
+                }), names.length ? values(o).some(is.falsy) ? void 0 : o : void 0;
+            };
+        }, body = function(ripple) {
+            return function(name) {
+                return ripple.resources[name] && ripple.resources[name].body;
+            };
+        }, index = function(el) {
+            return Array.prototype.indexOf.call(key("parentNode.children")(el) || [], el);
+        }, log = window.log("[ri/components]"), err = window.err("[ri/components]"), mutation = window.MutationRecord || noop, customs = !!document.registerElement, isAttached = customs ? "html *, :host-context(html) *" : "html *";
+        Element.prototype.matches = Element.prototype.matches || Element.prototype.msMatchesSelector;
+    }, {
+        "./types/data": 4,
+        "./types/fn": 5
+    } ],
+    4: [ function(require, module, exports) {
+        "use strict";
+        function data(ripple) {
+            return function(res) {
+                return all('[data~="' + res.name + '"]:not([inert])').map(ripple.draw);
+            };
+        }
+        Object.defineProperty(exports, "__esModule", {
+            value: !0
+        }), exports["default"] = data;
+    }, {} ],
+    5: [ function(require, module, exports) {
+        "use strict";
+        function fn(ripple) {
+            return function(res) {
+                if (!customs || !customEl(res) || registered(res)) return all(res.name + ':not([inert])\n                 ,[is="' + res.name + '"]:not([inert])').map(ripple.draw);
+                var proto = Object.create(HTMLElement.prototype), opts = {
+                    prototype: proto
+                };
+                proto.attachedCallback = ripple.draw, document.registerElement(res.name, opts);
+            };
+        }
+        Object.defineProperty(exports, "__esModule", {
+            value: !0
+        }), exports["default"] = fn;
+        var registered = function(res) {
+            return document.createElement(res.name).attachedCallback;
+        }, customs = !!document.registerElement, customEl = function(d) {
+            return includes("-")(d.name);
+        };
+    }, {} ],
+    6: [ function(require, module, exports) {
+        "use strict";
+        function _interopRequireDefault(obj) {
+            return obj && obj.__esModule ? obj : {
+                "default": obj
+            };
+        }
+        function core() {
+            function ripple(name, body, headers) {
+                return name ? is.arr(name) ? name.map(ripple) : is.obj(name) && !name.name ? ripple(values(name)) : is.fn(name) && name.resources ? ripple(values(name.resources)) : is.str(name) && !body && resources[name] ? resources[name].body : !is.str(name) || body || resources[name] ? is.str(name) && body ? register(ripple)({
+                    name: name,
+                    body: body,
+                    headers: headers
+                }) : is.obj(name) && !is.arr(name) ? register(ripple)(name) : (err("could not find or create resource", name), 
+                !1) : register(ripple)({
+                    name: name
+                }) : ripple;
+            }
+            log("creating");
+            var resources = {};
+            return ripple.resources = resources, ripple.resource = chainable(ripple), ripple.register = ripple, 
+            ripple.types = types(), emitterify(ripple);
+        }
+        Object.defineProperty(exports, "__esModule", {
+            value: !0
+        }), exports["default"] = core;
+        var _text = require("./types/text"), _text2 = _interopRequireDefault(_text), register = function(ripple) {
+            return function(_ref) {
+                var name = _ref.name, body = _ref.body, _ref$headers = _ref.headers, headers = void 0 === _ref$headers ? {} : _ref$headers;
+                log("registering", name);
+                var res = normalise(ripple)({
+                    name: name,
+                    body: body,
+                    headers: headers
+                });
+                return res ? (ripple.resources[name] = res, ripple.emit("change", [ name, {
+                    type: "update",
+                    value: res.body,
+                    time: now(res)
+                } ]), ripple.resources[name].body) : (err("failed to register", name), !1);
+            };
+        }, normalise = function(ripple) {
+            return function(res) {
+                return header("content-type")(res) || values(ripple.types).sort(za("priority")).some(contentType(res)), 
+                header("content-type")(res) ? parse(ripple)(res) : (err("could not understand resource", res), 
+                !1);
+            };
+        }, parse = function(ripple) {
+            return function(res) {
+                var type = header("content-type")(res);
+                return ripple.types[type] ? (ripple.types[type].parse || identity)(res) : (err("could not understand type", type), 
+                !1);
+            };
+        }, contentType = function(res) {
+            return function(type) {
+                return type.check(res) && (res.headers["content-type"] = type.header);
+            };
+        }, types = function() {
+            return [ _text2["default"] ].reduce(to.obj("header"), 1);
+        }, chainable = function(fn) {
+            return function() {
+                return fn.apply(this, arguments), fn;
+            };
+        }, err = window.err("[ri/core]"), log = window.log("[ri/core]"), now = function(d, t) {
+            return t = key("body.log.length")(d), is.num(t) ? t - 1 : t;
+        };
+    }, {
+        "./types/text": 7
+    } ],
+    7: [ function(require, module, exports) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", {
+            value: !0
+        }), exports["default"] = {
+            header: "text/plain",
+            check: function(res) {
+                return !includes(".html")(res.name) && !includes(".css")(res.name) && is.str(res.body);
+            }
+        };
+    }, {} ],
+    8: [ function(require, module, exports) {
+        "use strict";
+        function css(ripple) {
+            return log("creating"), ripple.types["text/css"] = {
+                header: "text/css",
+                check: function(res) {
+                    return includes(".css")(res.name);
+                }
+            }, ripple;
+        }
+        Object.defineProperty(exports, "__esModule", {
+            value: !0
+        }), exports["default"] = css;
+        var log = window.log("[ri/types/css]");
+    }, {} ],
+    9: [ function(require, module, exports) {
+        "use strict";
+        function data(ripple) {
+            return log("creating"), ripple.on("change.data", trickle(ripple)), ripple.types["application/data"] = {
+                header: "application/data",
+                check: function(res) {
+                    return !(!is.obj(res.body) && res.body);
+                },
+                parse: function(res) {
+                    var existing = ripple.resources[res.name] || {};
+                    return extend(res.headers)(existing.headers), res.body = set()(res.body || [], existing.body && existing.body.log, is.num(res.headers.log) ? res.headers.log : -1), 
+                    overwrite(res.body.on)(listeners(existing)), res.body.on("change.bubble", function(change) {
+                        ripple.emit("change", ripple.change = [ res.name, change ], not(is["in"]([ "data" ]))), 
+                        delete ripple.change;
+                    }), res;
+                }
+            }, ripple;
+        }
+        Object.defineProperty(exports, "__esModule", {
+            value: !0
+        }), exports["default"] = data;
+        var trickle = function(ripple) {
+            return function(name, change) {
+                return header("content-type", "application/data")(ripple.resources[name]) && ripple.resources[name].body.emit("change", [ change || null ], not(is["in"]([ "bubble" ])));
+            };
+        }, log = window.log("[ri/types/data]"), listeners = key("body.on");
+    }, {} ],
+    10: [ function(require, module, exports) {
+        "use strict";
+        function features(ripple) {
+            return log("creating"), ripple.render = render(ripple)(ripple.render), ripple;
+        }
+        Object.defineProperty(exports, "__esModule", {
+            value: !0
+        }), exports["default"] = features;
+        var render = function(ripple) {
+            return function(next) {
+                return function(el) {
+                    var features = str(attr(el, "is")).split(" ").map(from(ripple.resources)).filter(header("content-type", "application/javascript")), css = str(attr("css")(el)).split(" ");
+                    features.filter(by("headers.needs", includes("[css]"))).map(key("name")).map(append(".css")).filter(not(is["in"](css))).map(function(d) {
+                        return attr("css", (str(attr("css")(el)) + " " + d).trim())(el);
+                    });
+                    var node = next(el);
+                    return node && node.state ? features.map(key("body")).map(function(d) {
+                        return d.call(node.shadowRoot || node, node.state);
+                    }) : void 0;
+                };
+            };
+        }, log = window.log("[ri/features]");
+    }, {} ],
+    11: [ function(require, module, exports) {
+        "use strict";
+        function fnc(ripple) {
+            return log("creating"), ripple.types["application/javascript"] = {
+                header: header,
+                check: check,
+                parse: parse,
+                to: to
+            }, ripple;
+        }
+        Object.defineProperty(exports, "__esModule", {
+            value: !0
+        }), exports["default"] = fnc;
+        var header = "application/javascript", check = function(res) {
+            return is.fn(res.body);
+        }, parse = function(res) {
+            return res.body = fn(res.body), res;
+        }, log = window.log("[ri/types/fn]"), to = function(res) {
+            return res.body = str(res.body), res;
+        };
+    }, {} ],
+    12: [ function(require, module, exports) {
+        "use strict";
+        function helpers(ripple) {
+            log("creating");
+            var type = ripple.types["application/data"];
+            return type.parse = attach(type.parse), ripple;
+        }
+        Object.defineProperty(exports, "__esModule", {
+            value: !0
+        }), exports["default"] = helpers;
+        var attach = function(next) {
+            return function(res) {
+                next && (res = next(res));
+                var helpers = res.headers.helpers;
+                return keys(helpers).map(function(name) {
+                    return helpers[name] = fn(helpers[name]), name;
+                }).map(function(name) {
+                    return def(res.body, name, helpers[name]);
+                }), res;
+            };
+        }, log = window.log("[ri/helpers]");
+    }, {} ],
+    13: [ function(require, module, exports) {
+        "use strict";
+        function needs(ripple) {
+            return log("creating"), ripple.render = render(ripple)(ripple.render), ripple;
+        }
+        var _slicedToArray = function() {
+            function sliceIterator(arr, i) {
+                var _arr = [], _n = !0, _d = !1, _e = void 0;
+                try {
+                    for (var _s, _i = arr[Symbol.iterator](); !(_n = (_s = _i.next()).done) && (_arr.push(_s.value), 
+                    !i || _arr.length !== i); _n = !0) ;
+                } catch (err) {
+                    _d = !0, _e = err;
+                } finally {
+                    try {
+                        !_n && _i["return"] && _i["return"]();
+                    } finally {
+                        if (_d) throw _e;
+                    }
+                }
+                return _arr;
+            }
+            return function(arr, i) {
+                if (Array.isArray(arr)) return arr;
+                if (Symbol.iterator in Object(arr)) return sliceIterator(arr, i);
+                throw new TypeError("Invalid attempt to destructure non-iterable instance");
+            };
+        }();
+        Object.defineProperty(exports, "__esModule", {
+            value: !0
+        }), exports["default"] = needs;
+        var render = function(ripple) {
+            return function(next) {
+                return function(el) {
+                    var component = lo(el.nodeName);
+                    if (component in ripple.resources) {
+                        var headers = ripple.resources[component].headers, attrs = headers.attrs = headers.attrs || parse(headers.needs, component);
+                        return attrs.map(function(_ref) {
+                            var _ref2 = _slicedToArray(_ref, 2), name = _ref2[0], values = _ref2[1];
+                            return values.some(function(v, i) {
+                                var from = attr(el, name) || "";
+                                return !includes(v)(from) && attr(el, name, (from + " " + v).trim());
+                            });
+                        }).some(Boolean) ? el.draw() : next(el);
+                    }
+                };
+            };
+        }, parse = function() {
+            var attrs = arguments.length <= 0 || void 0 === arguments[0] ? "" : arguments[0], component = arguments[1];
+            return attrs.split("[").slice(1).map(replace("]", "")).map(split("=")).map(function(_ref3) {
+                var _ref4 = _slicedToArray(_ref3, 2), k = _ref4[0], v = _ref4[1];
+                return v ? [ k, v.split(" ") ] : "css" == k ? [ k, [ component + ".css" ] ] : [ k, [] ];
+            });
+        }, log = window.log("[ri/needs]");
+        window.err("[ri/needs]");
+    }, {} ],
+    14: [ function(require, module, exports) {
+        "use strict";
+        function _interopRequireDefault(obj) {
+            return obj && obj.__esModule ? obj : {
+                "default": obj
+            };
+        }
+        function precss(ripple) {
+            return log("creating"), ripple.render = render(ripple)(ripple.render), values(ripple.types).filter(by("header", "text/css")).map(function(type) {
+                return type.render = proxy(type.render, css(ripple));
+            }), ripple;
+        }
+        Object.defineProperty(exports, "__esModule", {
+            value: !0
+        }), exports["default"] = precss;
+        var _cssscope = require("cssscope"), _cssscope2 = _interopRequireDefault(_cssscope), render = function(ripple) {
+            return function(next) {
+                return function(host) {
+                    var styles, css = str(attr(host, "css")).split(" ").filter(Boolean), root = host.shadowRoot || host, head = document.head, shadow = head.createShadowRoot && host.shadowRoot;
+                    if (!css.length) return next(host);
+                    if (!css.some(not(is["in"](ripple.resources)))) return styles = css.map(from(ripple.resources)).map(key("body")).map(shadow ? identity : transform(css)), 
+                    css.map(function(d) {
+                        return raw('style[resource="' + d + '"]', shadow ? root : head) || el("style[resource=" + d + "]");
+                    }).map(key("innerHTML", function(d, i) {
+                        return styles[i];
+                    })).filter(not(by("parentNode"))).map(function(d) {
+                        return shadow ? root.insertBefore(d, root.firstChild) : head.appendChild(d);
+                    }), next(host);
+                };
+            };
+        }, transform = function(names) {
+            return function(styles, i) {
+                return (0, _cssscope2["default"])(styles, '[css~="' + names[i] + '"]');
+            };
+        }, css = function(ripple) {
+            return function(res) {
+                return all('[css~="' + res.name + '"]:not([inert])').map(ripple.draw);
+            };
+        }, log = window.log("[ri/precss]");
+        window.err("[ri/precss]");
+    }, {
+        cssscope: 2
+    } ],
+    15: [ function(require, module, exports) {
+        "use strict";
+        function singleton(ripple) {
+            return log("creating"), owner.ripple || (owner.ripple = ripple), ripple;
+        }
+        Object.defineProperty(exports, "__esModule", {
+            value: !0
+        }), exports["default"] = singleton;
+        var log = window.log("[ri/singleton]");
+    }, {} ],
+    16: [ function(require, module, exports) {
+        "use strict";
+        function version(ripple) {
+            log("creating");
+            ripple.types["application/data"];
+            return ripple.on("change.version", commit(ripple)), ripple.version = checkout(ripple), 
+            ripple.version.calc = calc(ripple), ripple.version.log = [], ripple;
+        }
+        Object.defineProperty(exports, "__esModule", {
+            value: !0
+        }), exports["default"] = version;
+        var commit = function(ripple) {
+            return function(name, change) {
+                return logged(ripple.resources[name]) && ripple.version.log.push(values(ripple.resources).filter(by(logged)).map(index));
+            };
+        }, index = function(_ref) {
+            var name = _ref.name, body = _ref.body;
+            return {
+                name: name,
+                index: body.log.length - 1
+            };
+        }, checkout = function(ripple) {
+            return function(name, index) {
+                return 2 == arguments.length ? resource(ripple)({
+                    name: name,
+                    index: index
+                }) : 1 == arguments.length && is.str(name) ? ripple.resources[name].body.log.length - 1 : 1 == arguments.length && is.num(name) ? application(ripple)(name) : 0 == arguments.length ? ripple.version.log.length - 1 : err("could not rollback", name, index);
+            };
+        }, application = function(ripple) {
+            return function(index) {
+                return ripple.version.log[rel(ripple.version.log, index)].map(resource(ripple));
+            };
+        }, resource = function(ripple) {
+            return function(_ref2) {
+                var name = _ref2.name, index = _ref2.index;
+                return ripple(name, ripple.version.calc(name, index));
+            };
+        }, calc = function(ripple) {
+            return function(name, index) {
+                var log = ripple.resources[name].body.log, end = rel(log, index), i = end;
+                if (log[end].cache) return log[end].cache;
+                for (;is.def(log[i].key); ) i--;
+                for (var root = clone(log[i].value); i !== end; ) set(log[++i])(root);
+                return def(log[end], "cache", root);
+            };
+        }, rel = function(log, index) {
+            return index < 0 ? log.length + index - 1 : index;
+        }, logged = function(res) {
+            return res.body.log && res.body.log.max > 0;
+        }, log = window.log("[ri/versioned]"), err = window.err("[ri/versioned]");
+    }, {} ]
+}, {}, [ 1 ]);
