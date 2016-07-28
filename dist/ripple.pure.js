@@ -322,9 +322,9 @@
                         return attr("css", (str(attr("css")(el)) + " " + d).trim())(el);
                     });
                     var node = next(el);
-                    return node && node.state ? features.map(key("body")).map(function(d) {
+                    return node && node.state ? (features.map(key("body")).map(function(d) {
                         return d.call(node.shadowRoot || node, node.state);
-                    }) : void 0;
+                    }), node) : void 0;
                 };
             };
         }, log = window.log("[ri/features]");
@@ -347,7 +347,7 @@
         }, parse = function(res) {
             return res.body = fn(res.body), res;
         }, log = window.log("[ri/types/fn]"), to = function(res) {
-            return res.body = str(res.body), res;
+            return res.value = str(res.value), res;
         };
     }, {} ],
     12: [ function(require, module, exports) {
@@ -448,12 +448,13 @@
                 return function(host) {
                     var styles, css = str(attr(host, "css")).split(" ").filter(Boolean), root = host.shadowRoot || host, head = document.head, shadow = head.createShadowRoot && host.shadowRoot;
                     if (!css.length) return next(host);
-                    if (!css.some(not(is.in(ripple.resources)))) return styles = css.map(from(ripple.resources)).map(key("body")).map(shadow ? identity : transform(css)), 
-                    css.map(function(d) {
+                    if (!css.some(not(is.in(ripple.resources)))) return styles = css.map(from(ripple.resources)).map(function(d) {
+                        return d.body;
+                    }).map(shadow ? identity : transform(css)), css.map(function(d) {
                         return raw('style[resource="' + d + '"]', shadow ? root : head) || el("style[resource=" + d + "]");
-                    }).map(key("innerHTML", function(d, i) {
-                        return styles[i];
-                    })).filter(not(by("parentNode"))).map(function(d) {
+                    }).map(function(d, i) {
+                        return d.innerHTML = styles[i], d;
+                    }).filter(not(by("parentNode"))).map(function(d) {
                         return shadow ? root.insertBefore(d, root.firstChild) : head.appendChild(d);
                     }), next(host);
                 };

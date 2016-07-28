@@ -66,7 +66,7 @@ function create(opts) {
   (0, _rijs2.default)(ripple); // invoke web components, fn.call(<el>, data)
   (0, _rijs8.default)(ripple); // extend components with features
   (0, _rijs14.default)(ripple); // define default attrs for components
-  (0, _rijs12.default)(ripple); // preapplies scoped css
+  (0, _rijs12.default)(ripple); // preapplies scoped css 
   (0, _rijs6.default)(ripple); // versioning info and time travel
   return ripple;
 }
