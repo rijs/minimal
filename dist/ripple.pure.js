@@ -25,19 +25,19 @@
         "use strict";
         function _interopRequireDefault(obj) {
             return obj && obj.__esModule ? obj : {
-                "default": obj
+                default: obj
             };
         }
         function create(opts) {
-            var ripple = (0, _rijs16["default"])();
-            return (0, _rijs4["default"])(ripple), (0, _rijs18["default"])(ripple), (0, _rijs20["default"])(ripple), 
-            (0, _rijs22["default"])(ripple), (0, _rijs10["default"])(ripple), (0, _rijs2["default"])(ripple), 
-            (0, _rijs8["default"])(ripple), (0, _rijs14["default"])(ripple), (0, _rijs12["default"])(ripple), 
-            (0, _rijs6["default"])(ripple), ripple;
+            var ripple = (0, _rijs16.default)();
+            return (0, _rijs4.default)(ripple), (0, _rijs18.default)(ripple), (0, _rijs20.default)(ripple), 
+            (0, _rijs22.default)(ripple), (0, _rijs10.default)(ripple), (0, _rijs2.default)(ripple), 
+            (0, _rijs8.default)(ripple), (0, _rijs14.default)(ripple), (0, _rijs12.default)(ripple), 
+            (0, _rijs6.default)(ripple), ripple;
         }
         Object.defineProperty(exports, "__esModule", {
             value: !0
-        }), exports["default"] = create;
+        }), exports.default = create;
         var _rijs = require("rijs.components"), _rijs2 = _interopRequireDefault(_rijs), _rijs3 = require("rijs.singleton"), _rijs4 = _interopRequireDefault(_rijs3), _rijs5 = require("rijs.versioned"), _rijs6 = _interopRequireDefault(_rijs5), _rijs7 = require("rijs.features"), _rijs8 = _interopRequireDefault(_rijs7), _rijs9 = require("rijs.helpers"), _rijs10 = _interopRequireDefault(_rijs9), _rijs11 = require("rijs.precss"), _rijs12 = _interopRequireDefault(_rijs11), _rijs13 = require("rijs.needs"), _rijs14 = _interopRequireDefault(_rijs13), _rijs15 = require("rijs.core"), _rijs16 = _interopRequireDefault(_rijs15), _rijs17 = require("rijs.data"), _rijs18 = _interopRequireDefault(_rijs17), _rijs19 = require("rijs.css"), _rijs20 = _interopRequireDefault(_rijs19), _rijs21 = require("rijs.fn"), _rijs22 = _interopRequireDefault(_rijs21);
         !window.ripple && create();
     }, {
@@ -70,16 +70,16 @@
         "use strict";
         function _interopRequireDefault(obj) {
             return obj && obj.__esModule ? obj : {
-                "default": obj
+                default: obj
             };
         }
         function components(ripple) {
             return log("creating"), values(ripple.types).map(function(type) {
                 return type.parse = proxy(type.parse, clean(ripple));
             }), key("types.application/javascript.render", function(d) {
-                return (0, _fn2["default"])(ripple);
+                return (0, _fn2.default)(ripple);
             })(ripple), key("types.application/data.render", function(d) {
-                return (0, _data2["default"])(ripple);
+                return (0, _data2.default)(ripple);
             })(ripple), ripple.draw = Node.prototype.draw = draw(ripple), ripple.render = render(ripple), 
             ripple.on("change.draw", ripple.draw), time(0, ripple.draw), ripple;
         }
@@ -90,7 +90,7 @@
         }
         Object.defineProperty(exports, "__esModule", {
             value: !0
-        }), exports["default"] = components;
+        }), exports.default = components;
         var _data = require("./types/data"), _data2 = _interopRequireDefault(_data), _fn = require("./types/fn"), _fn2 = _interopRequireDefault(_fn), everything = function(ripple) {
             var selector = values(ripple.resources).filter(header("content-type", "application/javascript")).map(key("name")).join(",");
             return selector ? all(selector).map(invoke(ripple)) : [];
@@ -162,7 +162,7 @@
         }
         Object.defineProperty(exports, "__esModule", {
             value: !0
-        }), exports["default"] = data;
+        }), exports.default = data;
     }, {} ],
     5: [ function(require, module, exports) {
         "use strict";
@@ -177,7 +177,7 @@
         }
         Object.defineProperty(exports, "__esModule", {
             value: !0
-        }), exports["default"] = fn;
+        }), exports.default = fn;
         var registered = function(res) {
             return document.createElement(res.name).attachedCallback;
         }, customs = !!document.registerElement, customEl = function(d) {
@@ -188,7 +188,7 @@
         "use strict";
         function _interopRequireDefault(obj) {
             return obj && obj.__esModule ? obj : {
-                "default": obj
+                default: obj
             };
         }
         function core() {
@@ -209,7 +209,7 @@
         }
         Object.defineProperty(exports, "__esModule", {
             value: !0
-        }), exports["default"] = core;
+        }), exports.default = core;
         var _text = require("./types/text"), _text2 = _interopRequireDefault(_text), register = function(ripple) {
             return function(_ref) {
                 var name = _ref.name, body = _ref.body, _ref$headers = _ref.headers, headers = void 0 === _ref$headers ? {} : _ref$headers;
@@ -242,7 +242,7 @@
                 return type.check(res) && (res.headers["content-type"] = type.header);
             };
         }, types = function() {
-            return [ _text2["default"] ].reduce(to.obj("header"), 1);
+            return [ _text2.default ].reduce(to.obj("header"), 1);
         }, chainable = function(fn) {
             return function() {
                 return fn.apply(this, arguments), fn;
@@ -257,7 +257,7 @@
         "use strict";
         Object.defineProperty(exports, "__esModule", {
             value: !0
-        }), exports["default"] = {
+        }), exports.default = {
             header: "text/plain",
             check: function(res) {
                 return !includes(".html")(res.name) && !includes(".css")(res.name) && is.str(res.body);
@@ -276,7 +276,7 @@
         }
         Object.defineProperty(exports, "__esModule", {
             value: !0
-        }), exports["default"] = css;
+        }), exports.default = css;
         var log = window.log("[ri/types/css]");
     }, {} ],
     9: [ function(require, module, exports) {
@@ -291,7 +291,7 @@
                     var existing = ripple.resources[res.name] || {};
                     return extend(res.headers)(existing.headers), res.body = set()(res.body || [], existing.body && existing.body.log, is.num(res.headers.log) ? res.headers.log : -1), 
                     overwrite(res.body.on)(listeners(existing)), res.body.on("change.bubble", function(change) {
-                        ripple.emit("change", ripple.change = [ res.name, change ], not(is["in"]([ "data" ]))), 
+                        ripple.emit("change", ripple.change = [ res.name, change ], not(is.in([ "data" ]))), 
                         delete ripple.change;
                     }), res;
                 }
@@ -299,10 +299,10 @@
         }
         Object.defineProperty(exports, "__esModule", {
             value: !0
-        }), exports["default"] = data;
+        }), exports.default = data;
         var trickle = function(ripple) {
             return function(name, change) {
-                return header("content-type", "application/data")(ripple.resources[name]) && ripple.resources[name].body.emit("change", [ change || null ], not(is["in"]([ "bubble" ])));
+                return header("content-type", "application/data")(ripple.resources[name]) && ripple.resources[name].body.emit("change", [ change || null ], not(is.in([ "bubble" ])));
             };
         }, log = window.log("[ri/types/data]"), listeners = key("body.on");
     }, {} ],
@@ -313,12 +313,12 @@
         }
         Object.defineProperty(exports, "__esModule", {
             value: !0
-        }), exports["default"] = features;
+        }), exports.default = features;
         var render = function(ripple) {
             return function(next) {
                 return function(el) {
                     var features = str(attr(el, "is")).split(" ").map(from(ripple.resources)).filter(header("content-type", "application/javascript")), css = str(attr("css")(el)).split(" ");
-                    features.filter(by("headers.needs", includes("[css]"))).map(key("name")).map(append(".css")).filter(not(is["in"](css))).map(function(d) {
+                    features.filter(by("headers.needs", includes("[css]"))).map(key("name")).map(append(".css")).filter(not(is.in(css))).map(function(d) {
                         return attr("css", (str(attr("css")(el)) + " " + d).trim())(el);
                     });
                     var node = next(el);
@@ -341,7 +341,7 @@
         }
         Object.defineProperty(exports, "__esModule", {
             value: !0
-        }), exports["default"] = fnc;
+        }), exports.default = fnc;
         var header = "application/javascript", check = function(res) {
             return is.fn(res.body);
         }, parse = function(res) {
@@ -359,7 +359,7 @@
         }
         Object.defineProperty(exports, "__esModule", {
             value: !0
-        }), exports["default"] = helpers;
+        }), exports.default = helpers;
         var attach = function(next) {
             return function(res) {
                 next && (res = next(res));
@@ -387,7 +387,7 @@
                     _d = !0, _e = err;
                 } finally {
                     try {
-                        !_n && _i["return"] && _i["return"]();
+                        !_n && _i.return && _i.return();
                     } finally {
                         if (_d) throw _e;
                     }
@@ -402,7 +402,7 @@
         }();
         Object.defineProperty(exports, "__esModule", {
             value: !0
-        }), exports["default"] = needs;
+        }), exports.default = needs;
         var render = function(ripple) {
             return function(next) {
                 return function(el) {
@@ -432,7 +432,7 @@
         "use strict";
         function _interopRequireDefault(obj) {
             return obj && obj.__esModule ? obj : {
-                "default": obj
+                default: obj
             };
         }
         function precss(ripple) {
@@ -442,13 +442,13 @@
         }
         Object.defineProperty(exports, "__esModule", {
             value: !0
-        }), exports["default"] = precss;
+        }), exports.default = precss;
         var _cssscope = require("cssscope"), _cssscope2 = _interopRequireDefault(_cssscope), render = function(ripple) {
             return function(next) {
                 return function(host) {
                     var styles, css = str(attr(host, "css")).split(" ").filter(Boolean), root = host.shadowRoot || host, head = document.head, shadow = head.createShadowRoot && host.shadowRoot;
                     if (!css.length) return next(host);
-                    if (!css.some(not(is["in"](ripple.resources)))) return styles = css.map(from(ripple.resources)).map(key("body")).map(shadow ? identity : transform(css)), 
+                    if (!css.some(not(is.in(ripple.resources)))) return styles = css.map(from(ripple.resources)).map(key("body")).map(shadow ? identity : transform(css)), 
                     css.map(function(d) {
                         return raw('style[resource="' + d + '"]', shadow ? root : head) || el("style[resource=" + d + "]");
                     }).map(key("innerHTML", function(d, i) {
@@ -460,7 +460,7 @@
             };
         }, transform = function(names) {
             return function(styles, i) {
-                return (0, _cssscope2["default"])(styles, '[css~="' + names[i] + '"]');
+                return (0, _cssscope2.default)(styles, '[css~="' + names[i] + '"]');
             };
         }, css = function(ripple) {
             return function(res) {
@@ -478,7 +478,7 @@
         }
         Object.defineProperty(exports, "__esModule", {
             value: !0
-        }), exports["default"] = singleton;
+        }), exports.default = singleton;
         var log = window.log("[ri/singleton]");
     }, {} ],
     16: [ function(require, module, exports) {
@@ -491,7 +491,7 @@
         }
         Object.defineProperty(exports, "__esModule", {
             value: !0
-        }), exports["default"] = version;
+        }), exports.default = version;
         var commit = function(ripple) {
             return function(name, change) {
                 return logged(ripple.resources[name]) && ripple.version.log.push(values(ripple.resources).filter(by(logged)).map(index));
