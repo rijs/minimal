@@ -121,7 +121,7 @@
                 if (!fn) return el;
                 if (deps && !data) return el;
                 try {
-                    fn.call(root, defaults(el, data), index(el), root);
+                    fn.call(root, root, defaults(el, data));
                 } catch (e) {
                     err(e, e.stack);
                 }
@@ -145,8 +145,6 @@
             return function(name) {
                 return ripple.resources[name] && ripple.resources[name].body;
             };
-        }, index = function(el) {
-            return Array.prototype.indexOf.call(key("parentNode.children")(el) || [], el);
         }, log = window.log("[ri/components]"), err = window.err("[ri/components]"), mutation = window.MutationRecord || noop, customs = !!document.registerElement, isAttached = customs ? "html *, :host-context(html) *" : "html *";
         Element.prototype.matches = Element.prototype.matches || Element.prototype.msMatchesSelector;
     }, {
@@ -323,7 +321,7 @@
                     });
                     var node = next(el);
                     return node && node.state ? (features.map(key("body")).map(function(d) {
-                        return d.call(node.shadowRoot || node, node.state);
+                        return d.call(node.shadowRoot || node, node.shadowRoot || node, node.state);
                     }), node) : void 0;
                 };
             };
