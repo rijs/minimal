@@ -30,22 +30,24 @@ Use it on the page:
 Ripple is agnostic to _how_ you write your components, they should just be idempotent (a single render function). This is fine:
 
 ```js
-ripple('my-app', (d, i, el) => el.innerHTML = 'Hello World')
+ripple('my-app', (node, data) => node.innerHTML = 'Hello World')
 ```
 
 Or using some DOM-diff helper:
 
 ```js
-ripple('my-app', (d, i, el) => diff(el)`<h1>Hello World</h1>`)
+ripple('my-app', (node, data) => jsx(node)`<h1>Hello World</h1>`)
 ```
 
 Or using [once](https://github.com/utilise/once#once)/D3 joins:
 
 ```js
-ripple('my-app', (d, i, el) => {
-  once(el)
+ripple('my-app', (node, data) => {
+
+  once(node)
     ('h1', 1)
       .text('Hello World')
+
 })
 ```
 
@@ -54,10 +56,12 @@ For more info about writing idempotent components, see [this spec](https://githu
 <br>
 ## State/Data
 
-The first parameter of the component contains all the state and data the component needs to render:
+The first parameter of the component is the node to update. 
+
+The second parameter contains all the state and data the component needs to render:
 
 ```js
-export default function component(data){ ... }
+export default function component(node, data){ ... }
 ```
 
 You can pass down data by adding the name of the resources to the data attribute:
@@ -161,13 +165,13 @@ Dispatch an event on the root element to communicate changes to parents (`node.d
 Just invoke a redraw of your application when the route has changed: 
 
 ```js
-export function app(d, i, el){
-  const o = once(el)
+export function app(node, data){
+  const o = once(node)
 
   o('h1', 1)
     .text('You are currently on: ' + location.pathname)
 
-  window.on('change', d => el.draw())
+  window.on('change', d => node.draw())
 }
 ```
 
@@ -232,12 +236,12 @@ By default the draw function just invokes the function on an element. You can ex
 
 ```js
 // in component
-export default function component(d, i, el){
+export default function component(node, data){
   middleware(d, i, el)
 }
 
 // around component
-export default middleware(function component(d, i, el){
+export default middleware(function component(node, data){
   
 })
 
@@ -288,7 +292,7 @@ ripple('some.css', `:host { background: red }`)
 <br>
 ## Fullstack
 
-If you have a backed for your frontend, checkout [rijs/fullstack](https://github.com/rijs/fullstack) which transparently adds a few more modules to synchronise state between client-server or for more docs.
+If you have a backend for your frontend, checkout [rijs/fullstack](https://github.com/rijs/fullstack) which transparently adds a few more modules to synchronise state between client-server or for more docs.
 
 You can also adjust your own framework by [adding/removing modules](https://github.com/rijs/minimal/blob/master/src/index.js#L1-L11).
 
