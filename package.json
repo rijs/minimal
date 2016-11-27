@@ -39,15 +39,16 @@
   "devDependencies": {
     "babel-cli": "*",
     "babel-preset-es2015": "*",
-    "browserify": "*",
+    "browserify": "^13.1.1",
     "chai": "*",
-    "popper": "*",
     "coveralls": "*",
+    "glob": "*",
     "istanbul": "*",
     "mocha": "*",
     "mocha-lcov-reporter": "*",
-    "uglify-js": "*",
-    "glob": "*",
-    "mockery": "*"
+    "mockery": "*",
+    "popper": "*",
+    "rijs.export": "0.0.9",
+    "uglify-js": "*"
   }
 }
